@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
 import '../../models/habit.dart';
+import 'add_habit.dart';
 
 //HomeScreenクラス
 
@@ -94,12 +95,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ? _buildEmptyView()
           //習慣がある場合の表示
           : _buildHabitList(),
+
+      // FloatingActionButton = 画面右下の丸いボタン
+      floatingActionButton: FloatingActionButton(
+        // onPressed = ボタンが押されたときの処理
+        heroTag: 'add_habit',
+        onPressed: () {
+          // 習慣追加画面に遷移
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return const AddHabit();
+              },
+            ),
+          );
+          _loadHabits();
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
   //習慣がない場合の表示
   Widget _buildEmptyView() {
-    return Center(
+    return SafeArea(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: const [
