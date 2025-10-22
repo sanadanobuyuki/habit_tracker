@@ -188,6 +188,7 @@ class DatabaseService {
 
     //insert()=データベースに新しい行を追加する
     //habitsテーブルに新しい習慣を追加
+    //conflictAlgorithm.replace = 既に同じIDが存在する場合は上書きする テスト用
     await db.insert('habits', {
       'id': id,
       'name': name,
@@ -196,7 +197,7 @@ class DatabaseService {
       'target_frequency': targetFrequency,
       'created_at': createdAt,
       'is_deleted': 0, //新規追加時は削除フラグを0に設定
-    });
+    }, conflictAlgorithm: ConflictAlgorithm.replace); //テスト用
   }
 
   //すべての習慣を取得する

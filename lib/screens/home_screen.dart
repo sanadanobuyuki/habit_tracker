@@ -25,39 +25,39 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     //テスト
-    // _addTestHabits(); // テストデータ追加
+    _addTestHabits(); // テストデータ追加(開発中のみ)
     _loadHabits(); //習慣データをロード
   }
 
   // テストデータ追加用の関数
-  // Future<void> _addTestHabits() async {
-  //   final db = DatabaseService();
+  Future<void> _addTestHabits() async {
+    final db = DatabaseService();
 
-  //   try {
-  //     // テスト習慣1
-  //     await db.insertHabit(
-  //       id: 'habit_001',
-  //       name: '朝の運動',
-  //       emoji: '🏃‍♂️',
-  //       color: 0xFFEF4444,
-  //       targetFrequency: 7,
-  //       createdAt: DateTime.now().millisecondsSinceEpoch,
-  //     );
+    try {
+      // テスト習慣1
+      await db.insertHabit(
+        id: 'habit_001',
+        name: '朝の運動',
+        emoji: '🏃‍♂️',
+        color: 0xFFEF4444,
+        targetFrequency: 7,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
 
-  //     // テスト習慣2
-  //     await db.insertHabit(
-  //       id: 'habit_002',
-  //       name: '読書30分',
-  //       emoji: '📚',
-  //       color: 0xFF3B82F6,
-  //       targetFrequency: 5,
-  //       createdAt: DateTime.now().millisecondsSinceEpoch,
-  //     );
-  //   } catch (e) {
-  //     // 既にデータがある場合はエラーになるが問題なし
-  //     print('テストデータ追加: $e');
-  //   }
-  // }
+      // テスト習慣2
+      await db.insertHabit(
+        id: 'habit_002',
+        name: '読書30分',
+        emoji: '📚',
+        color: 0xFF3B82F6,
+        targetFrequency: 5,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+    } catch (e) {
+      // 既にデータがある場合はエラーになるが問題なし
+      print('テストデータ追加: $e');
+    }
+  }
 
   //習慣を読みこむ
   //処理の流れ
@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // itemBuilder = 各項目をどう表示するか
       // context = 画面の情報
-      // index = 何番目の項目か（0から始まる）
+      // index = 何番目の項目か(0から始まる)
       itemBuilder: (context, index) {
         final habit = _habits[index];
 
@@ -146,61 +146,136 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 習慣カードを作成
-  ///
-  /// Card = 影付きのカード型UI
-  /// ListTile = リスト項目の標準的なレイアウト
+  // 習慣カードを作成
+  //
+  // Card = 影付きのカード型UI
+  // ListTile = リスト項目の標準的なレイアウト
+  //
+  //Dismissible = スワイプで削除可能にするウィジェット
+  // key = 各項目を一意に識別するためのキー
+  //direction = スワイプ可能な方向
+  //background = スワイプ時に表示される背景
+  //onDismissed = スワイプで削除されたときの処理
   Widget _buildHabitCard(Habit habit) {
-    return Card(
-      // margin = カードの外側の余白
-      margin: const EdgeInsets.only(bottom: 12),
-
-      // elevation = 影の深さ
-      elevation: 2,
-
-      // shape = カードの形状
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12), // 角を丸くする
+    return Dismissible(
+      //key=各カードを識別するための一意のキー
+      key: Key(habit.id),
+      //direction=スワイプ可能な方向
+      direction: DismissDirection.endToStart,
+      //background=スワイプ時に表示される背景
+      background: Container(
+        alignment: Alignment.centerRight,
+        // 右側に余白を追加 これがないとゴミ箱アイコンが端にくっついてしまう
+        padding: const EdgeInsets.only(right: 20),
+        //赤い背景とゴミ箱アイコン
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        //アイコンの表示
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
 
-      child: ListTile(
-        // contentPadding = 内側の余白
-        contentPadding: const EdgeInsets.all(16),
+      //confirmDismiss=スワイプで削除する前に確認ダイアログを表示
+      confirmDismiss: (direction) async {
+        //削除確認ダイアログを表示
+        return await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                //タイトル
+                title: const Text('習慣を削除'),
+                //詳細
+                content: Text('「${habit.name}」を削除しますか?'),
+                actions: [
+                  TextButton(
+                    //キャンセルボタン
+                    //falseを返して削除しない
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('キャンセル'),
+                  ),
+                  TextButton(
+                    //削除ボタン
+                    //trueを返して削除を実行
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('削除'),
+                  ),
+                ],
+              ),
+            ) ??
+            // ダイアログが閉じられた場合は削除しない
+            false;
+      },
+      // onDismissed について:
+      /// スワイプ完了後に実行される関数
+      /// ここでデータベースから削除する
+      onDismissed: (direction) async {
+        final db = DatabaseService();
+        await db.deleteHabit(habit.id);
 
-        // leading = 左側に表示する要素
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            // Color() = 色を指定
-            // habit.color = データベースに保存されている色コード
-            color: Color(habit.color).withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+        // スナックバーで削除完了を通知
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('「${habit.name}」を削除しました'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // 画面を再読み込み
+        await _loadHabits();
+      },
+      child: Card(
+        // margin = カードの外側の余白
+        margin: const EdgeInsets.only(bottom: 12),
+
+        // elevation = 影の深さ
+        elevation: 2,
+
+        // shape = カードの形状
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), // 角を丸くする
+        ),
+
+        child: ListTile(
+          // contentPadding = 内側の余白
+          contentPadding: const EdgeInsets.all(16),
+
+          // leading = 左側に表示する要素
+          leading: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              // Color() = 色を指定
+              // habit.color = データベースに保存されている色コード
+              color: Color(habit.color).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(habit.emoji, style: const TextStyle(fontSize: 28)),
+            ),
           ),
-          child: Center(
-            child: Text(habit.emoji, style: const TextStyle(fontSize: 28)),
+
+          // title = タイトル部分
+          title: Text(
+            habit.name,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-        ),
 
-        // title = タイトル部分
-        title: Text(
-          habit.name,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+          // subtitle = サブタイトル部分
+          subtitle: Text(
+            '目標: 週${habit.targetFrequency}回',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
 
-        // subtitle = サブタイトル部分
-        subtitle: Text(
-          '目標: 週${habit.targetFrequency}回',
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-
-        // trailing = 右側に表示する要素
-        trailing: Container(
-          width: 4,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Color(habit.color),
-            borderRadius: BorderRadius.circular(2),
+          // trailing = 右側に表示する要素
+          trailing: Container(
+            width: 4,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color(habit.color),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
         ),
       ),
