@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'services/database_service.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/achievements/achievements_screen.dart';
+import 'screens/calendar/calendar_screen.dart';
 
 /// async について:
 /// データベース初期化などの時間がかかる処理があるため、
@@ -41,8 +43,62 @@ class MyApp extends StatelessWidget {
       ),
 
       // home = 最初に表示する画面
-      // HomeScreen() = ホーム画面を表示
-      home: const HomeScreen(),
+      home: const MainScreen(),
+    );
+  }
+}
+
+// MainScreen = BottomNavigationBarを持つメイン画面
+class MainScreen extends StatefulWidget {
+  const MainScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  // _currentIndex = 現在選択されているタブのインデックス
+  int _currentIndex = 0;
+
+  // _pages = 各タブで表示する画面のリスト
+  final List<Widget> _pages = [
+    const HomeScreen(),
+    const CalendarScreen(),
+    const AchievementsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // body = 現在選択されているタブの画面を表示
+      body: _pages[_currentIndex],
+
+      // bottomNavigationBar = 下部のナビゲーションバー
+      bottomNavigationBar: BottomNavigationBar(
+        // type = ナビゲーションバーのタイプ
+        // fixed = 固定表示（3〜5個のタブに適している）
+        type: BottomNavigationBarType.fixed,
+
+        // currentIndex = 現在選択されているタブ
+        currentIndex: _currentIndex,
+
+        // onTap = タブがタップされたときの処理
+        onTap: (int selectedIndex) {
+          setState(() {
+            _currentIndex = selectedIndex;
+          });
+        },
+
+        // items = ナビゲーションバーの各タブ
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "ホーム"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month),
+            label: "カレンダー",
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: "実績"),
+        ],
+      ),
     );
   }
 }
