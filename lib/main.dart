@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'services/database_service.dart';
-import 'screens/home_screen.dart';
+import 'screens/home/home_screen.dart';
 
 /// async について:
 /// データベース初期化などの時間がかかる処理があるため、
