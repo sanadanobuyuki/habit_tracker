@@ -74,11 +74,11 @@ class DatabaseService {
     //役割:ユーザーが登録した習慣の情報の保存
     //例:「朝の運動」「読書」「水を飲む」
     await db.execute('''
-      CREATE TABLE hadits(
+      CREATE TABLE habits(
        id TEXT PRIMARY KEY,                      --習慣の一意な識別子
        name TEXT NOT NULL,                       --習慣の名前  
        emoji TEXT,                               --習慣を表す絵文字
-       coloor INTEGER,                           --習慣の表示色
+       color INTEGER,                           --習慣の表示色
        target_frequency INTEGER DEFAULT 7,       --目標頻度（週あたりの回数）
        created_at INTEGER NOT NULL,              --習慣の作成日時（UNIXタイムスタンプ）
        is_deleted INTEGER DEFAULT 0              --削除フラグ（0=有効、1=削除済み）
@@ -95,7 +95,7 @@ class DatabaseService {
        date TEXT NOT NULL,                       --記録日(YYYY-MM-DD形式)
        completed INTEGER DEFAULT 0,              --達成フラグ（0=未達成、1=達成）
        note TEXT,                                --記録に関するメモ
-       recorded_at INTEGER NOTNULL,              --記録日時
+       recorded_at INTEGER NOT NULL,              --記録日時
        FOREIGN KEY (habit_id) REFERENCES habits (id) ON DELETE CASCADE
        -- FOREIGN KEY =habit_idはhabitsテーブルのidを参照
        -- ON DELETE CASCADE =習慣を削除すると関連記録も削除
