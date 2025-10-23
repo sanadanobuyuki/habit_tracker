@@ -56,7 +56,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       // 既にデータがある場合はエラーになるが問題なし
-      print('テストデータ追加: $e');
     }
   }
 
@@ -83,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ハビコツ')),
@@ -100,9 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         // onPressed = ボタンが押されたときの処理
         heroTag: 'add_habit',
-        onPressed: () {
+        onPressed: () async {
           // 習慣追加画面に遷移
-          Navigator.of(context).push(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) {
                 return const AddHabit();
@@ -267,6 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               // Color() = 色を指定
               // habit.color = データベースに保存されている色コード
+              // ignore: deprecated_member_use
               color: Color(habit.color).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
