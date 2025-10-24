@@ -4,10 +4,8 @@ import '../../models/habit.dart';
 import 'add_habit.dart';
 
 //HomeScreenクラス
-
 //役割
 // アプリのホーム画面を表示する
-//
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,12 +20,23 @@ class _HomeScreenState extends State<HomeScreen> {
   //ローディング中かどうか
   bool _isLoading = true;
 
+  //今日の記録達成を保存する Map
+  //キー:habit_id,値:達成フラグ(0=未達成,1=達成)
+  Map<String, int> _todayRecords = {};
+
   @override
   void initState() {
     super.initState();
-    //テスト
-    _addTestHabits(); // テストデータ追加(開発中のみ)
-    _loadHabits(); //習慣データをロード
+    _initializeData(); // この関数で順番に実行
+  }
+
+  // データを初期化する
+  // 処理の流れ:
+  // 1. テストデータを追加(完了を待つ)
+  // 2. 習慣データを読み込む
+  Future<void> _initializeData() async {
+    await _addTestHabits(); // テストデータ追加を待つ
+    await _loadHabits(); // その後、習慣を読み込む
   }
 
   // テストデータ追加用の関数
@@ -63,7 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
   //処理の流れ
   //1.データベースからすべての習慣を取得
   //2.MapのリストをHabitオブジェクトのリストに変換
-  //3.画面を更新
+  //3.今日の達成記録を取得
+  //4.画面を更新
 
   Future<void> _loadHabits() async {
     //データべースサービスのインスタンスを作成
@@ -75,11 +85,107 @@ class _HomeScreenState extends State<HomeScreen> {
     //MapのリストをHabitオブジェクトのリストに変換
     final habits = habitsData.map((data) => Habit.fromMap(data)).toList();
 
+    //今日の日付を取得(YYYY-MM-DD形式)
+    final today = _getTodayString();
+
+    //今日の記録を取得
+    final todayRecordsData = await db.getRecordsByDate(today);
+
+    //Map形式に変換 {habit_id: completed}
+    final Map<String, int> todayRecords = {};
+    for (var record in todayRecordsData) {
+      todayRecords[record['habit_id'] as String] =
+          record['completed'] as int ?? 0;
+    }
+
     //画面を更新
     setState(() {
       _habits = habits;
+      _todayRecords = todayRecords;
       _isLoading = false;
     });
+  }
+
+  //今日の日付をYYYY-MM-DD形式で取得
+  //例2024-10-24
+  String _getTodayString() {
+    final now = DateTime.now();
+    //oadLeft(2,'0')について
+    //二桁になるように左側をゼロで埋める
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  //習慣の達成状態を切り替える
+  //処理の流れ
+  //1.現在の達成状態を確認
+  //2.達成・未達成を反転
+  //3.データベースに保存または更新
+  //4.画面を更新
+  Future<void> _toggleHabitCompletion(Habit habit) async {
+    final db = DatabaseService();
+    final today = _getTodayString();
+
+    //達成状況を取得
+    final currentCompleted = _todayRecords[habit.id] ?? 0;
+
+    //達成状態を反転
+    final newCompleted = currentCompleted == 0 ? 1 : 0;
+
+    try {
+      //今日の記録がすでに存在するか確認
+      final existingRecords = await db.getRecordsByDate(today);
+      final existingRecord = existingRecords.firstWhere(
+        (record) => record['habit_id'] == habit.id,
+        orElse: () => <String, dynamic>{},
+      );
+      if (existingRecord.isEmpty) {
+        //記録が存在しない場合新規製作
+        final recordId =
+            'record_${habit.id}_${DateTime.now().millisecondsSinceEpoch}';
+        await db.insertRecord(
+          id: recordId,
+          habitId: habit.id,
+          date: today,
+          completed: newCompleted,
+          recordedAt: DateTime.now().millisecondsSinceEpoch,
+        );
+      } else {
+        //記録が存在する場合:更新
+        await db.updateRecord(
+          id: existingRecord['id'] as String,
+          completed: newCompleted,
+        );
+      }
+
+      //画面更新
+      setState(() {
+        _todayRecords[habit.id] = newCompleted;
+      });
+
+      //スナックバーで通知
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newCompleted == 1
+                  ? '${habit.emoji} ${habit.name} を達成しました!'
+                  : '${habit.name} の達成を取り消しました',
+            ),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      // エラー処理
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('エラーが発生しました: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -109,6 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           );
+          //画面から戻ってきたら習慣を再度読み込み
           _loadHabits();
         },
         child: const Icon(Icons.add),
@@ -176,6 +283,9 @@ class _HomeScreenState extends State<HomeScreen> {
   //background = スワイプ時に表示される背景
   //onDismissed = スワイプで削除されたときの処理
   Widget _buildHabitCard(Habit habit) {
+    //今日の達成状態を取得
+    final isCompleted = (_todayRecords[habit.id] ?? 0) == 1;
+
     return Dismissible(
       //key=各カードを識別するための一意のキー
       key: Key(habit.id),
@@ -257,6 +367,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
 
         child: ListTile(
+          //onTapについて
+          //カードをタップした時の処理
+          //ここでは達成状態を切り替える
+          onTap: () => _toggleHabitCompletion(habit),
+
           // contentPadding = 内側の余白
           contentPadding: const EdgeInsets.all(16),
 
@@ -289,13 +404,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // trailing = 右側に表示する要素
-          trailing: Container(
-            width: 4,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Color(habit.color),
-              borderRadius: BorderRadius.circular(2),
-            ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              //達成済みの場合はチェックマークを表示
+              if (isCompleted)
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Color(habit.color),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 20),
+                ),
+              const SizedBox(width: 8),
+              //色のバー
+              Container(
+                width: 4,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Color(habit.color),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
           ),
         ),
       ),
