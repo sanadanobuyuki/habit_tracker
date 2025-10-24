@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart'; // 追加
+import 'package:path/path.dart'; // 追加
 import 'services/database_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
@@ -12,6 +14,11 @@ void main() async {
   /// Flutterの初期化を行う
   /// データベースやプラグインを使う前に必ず実行する必要がある
   WidgetsFlutterBinding.ensureInitialized();
+
+  // データベースを削除 (開発中のみ)
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'habit_flow.db');
+  await deleteDatabase(path);
 
   // データベースの初期化
   // await = データベースが開くまで待つ

@@ -4,8 +4,10 @@ import '../../models/habit.dart';
 import 'add_habit.dart';
 
 //HomeScreenクラス
+
 //役割
 // アプリのホーム画面を表示する
+//
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,14 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
   //ローディング中かどうか
   bool _isLoading = true;
 
-  //今日の記録達成を保存する Map
-  //キー:habit_id,値:達成フラグ(0=未達成,1=達成)
+  // 今日の達成記録を保存する Map
+  // キー: habit_id, 値: 達成フラグ(0=未達成, 1=達成)
   Map<String, int> _todayRecords = {};
 
   @override
   void initState() {
     super.initState();
-    _initializeData(); // この関数で順番に実行
+    _initializeData();
   }
 
   // データを初期化する
@@ -44,27 +46,41 @@ class _HomeScreenState extends State<HomeScreen> {
     final db = DatabaseService();
 
     try {
-      // テスト習慣1
+      // テスト習慣1: 毎日の運動
       await db.insertHabit(
         id: 'habit_001',
         name: '朝の運動',
         emoji: '🏃‍♂️',
         color: 0xFFEF4444,
         targetFrequency: 7,
+        daysOfWeek: null, // null = 毎日
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
 
-      // テスト習慣2
+      // テスト習慣2: 平日のみの読書
       await db.insertHabit(
         id: 'habit_002',
         name: '読書30分',
         emoji: '📚',
         color: 0xFF3B82F6,
         targetFrequency: 5,
+        daysOfWeek: '1,2,3,4,5', // 月〜金
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      // テスト習慣3: 週末のヨガ
+      await db.insertHabit(
+        id: 'habit_003',
+        name: 'ヨガ',
+        emoji: '🧘‍♀️',
+        color: 0xFF10B981,
+        targetFrequency: 2,
+        daysOfWeek: '6,7', // 土日
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
     } catch (e) {
       // 既にデータがある場合はエラーになるが問題なし
+      print('テストデータ追加: $e');
     }
   }
 
@@ -85,17 +101,17 @@ class _HomeScreenState extends State<HomeScreen> {
     //MapのリストをHabitオブジェクトのリストに変換
     final habits = habitsData.map((data) => Habit.fromMap(data)).toList();
 
-    //今日の日付を取得(YYYY-MM-DD形式)
+    // 今日の日付を取得 (YYYY-MM-DD形式)
     final today = _getTodayString();
 
-    //今日の記録を取得
+    // 今日の記録を取得
     final todayRecordsData = await db.getRecordsByDate(today);
 
-    //Map形式に変換 {habit_id: completed}
+    // Map形式に変換 { habit_id: completed }
     final Map<String, int> todayRecords = {};
     for (var record in todayRecordsData) {
       todayRecords[record['habit_id'] as String] =
-          record['completed'] as int ?? 0;
+          record['completed'] as int? ?? 0;
     }
 
     //画面を更新
@@ -106,40 +122,44 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  //今日の日付をYYYY-MM-DD形式で取得
-  //例2024-10-24
+  // 今日の日付を YYYY-MM-DD 形式で取得
+  //
+  // 例: 2024-10-24
   String _getTodayString() {
     final now = DateTime.now();
-    //oadLeft(2,'0')について
-    //二桁になるように左側をゼロで埋める
+    // padLeft(2, '0') について:
+    // 2桁になるように左側を0で埋める
+    // 例: 1 → 01, 12 → 12
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  //習慣の達成状態を切り替える
-  //処理の流れ
-  //1.現在の達成状態を確認
-  //2.達成・未達成を反転
-  //3.データベースに保存または更新
-  //4.画面を更新
+  // 習慣の達成状態を切り替える
+  //
+  // 処理の流れ:
+  // 1. 現在の達成状態を確認
+  // 2. 達成/未達成を反転
+  // 3. データベースに保存または更新
+  // 4. 画面を更新
   Future<void> _toggleHabitCompletion(Habit habit) async {
     final db = DatabaseService();
     final today = _getTodayString();
 
-    //達成状況を取得
+    // 現在の達成状態を取得 (未記録の場合は0=未達成)
     final currentCompleted = _todayRecords[habit.id] ?? 0;
 
-    //達成状態を反転
+    // 達成状態を反転 (0→1, 1→0)
     final newCompleted = currentCompleted == 0 ? 1 : 0;
 
     try {
-      //今日の記録がすでに存在するか確認
+      // 今日の記録が既に存在するか確認
       final existingRecords = await db.getRecordsByDate(today);
       final existingRecord = existingRecords.firstWhere(
         (record) => record['habit_id'] == habit.id,
         orElse: () => <String, dynamic>{},
       );
+
       if (existingRecord.isEmpty) {
-        //記録が存在しない場合新規製作
+        // 記録が存在しない場合: 新規作成
         final recordId =
             'record_${habit.id}_${DateTime.now().millisecondsSinceEpoch}';
         await db.insertRecord(
@@ -150,19 +170,19 @@ class _HomeScreenState extends State<HomeScreen> {
           recordedAt: DateTime.now().millisecondsSinceEpoch,
         );
       } else {
-        //記録が存在する場合:更新
+        // 記録が存在する場合: 更新
         await db.updateRecord(
           id: existingRecord['id'] as String,
           completed: newCompleted,
         );
       }
 
-      //画面更新
+      // 画面を更新
       setState(() {
         _todayRecords[habit.id] = newCompleted;
       });
 
-      //スナックバーで通知
+      // スナックバーで通知
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -192,6 +212,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('ハビコツ')),
+
+      // SafeArea について:
+      // AppBarがある場合、body全体をSafeAreaで囲む必要はない
+      // しかし、統一性のため全体を囲むこともできる
+      // ここではAppBarがあるのでSafeAreaは不要
       body: _isLoading
           //ローディング中ならぐるぐる回るアイコンを表示
           ? const Center(child: CircularProgressIndicator())
@@ -215,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           );
-          //画面から戻ってきたら習慣を再度読み込み
+          // 画面から戻ってきたら習慣を再読み込み
           _loadHabits();
         },
         child: const Icon(Icons.add),
@@ -225,10 +250,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //習慣がない場合の表示
   Widget _buildEmptyView() {
-    return SafeArea(
+    // SafeArea について:
+    // AppBarがある場合は自動的に安全領域が確保されるため不要
+    // しかし、念のため追加しても問題ない
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           //Icon=アイコンを表示
           Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
           SizedBox(height: 16), // 縦の余白
@@ -283,8 +311,12 @@ class _HomeScreenState extends State<HomeScreen> {
   //background = スワイプ時に表示される背景
   //onDismissed = スワイプで削除されたときの処理
   Widget _buildHabitCard(Habit habit) {
-    //今日の達成状態を取得
+    // 今日の達成状態を取得
     final isCompleted = (_todayRecords[habit.id] ?? 0) == 1;
+
+    // 今日が対象の曜日かどうかを判定
+    final today = DateTime.now().weekday; // 1(月)〜7(日)
+    final isTargetDay = habit.isTargetDay(today);
 
     return Dismissible(
       //key=各カードを識別するための一意のキー
@@ -354,81 +386,102 @@ class _HomeScreenState extends State<HomeScreen> {
         // 画面を再読み込み
         await _loadHabits();
       },
-      child: Card(
-        // margin = カードの外側の余白
-        margin: const EdgeInsets.only(bottom: 12),
+      child: Opacity(
+        // Opacity について:
+        // 透明度を指定する (0.0〜1.0)
+        // 今日対象外の場合は0.4(薄く表示)、対象の場合は1.0(通常表示)
+        opacity: isTargetDay ? 1.0 : 0.4,
+        child: Card(
+          // margin = カードの外側の余白
+          margin: const EdgeInsets.only(bottom: 12),
 
-        // elevation = 影の深さ
-        elevation: 2,
+          // elevation = 影の深さ
+          // 今日対象外の場合は影を薄くする
+          elevation: isTargetDay ? 2 : 1,
 
-        // shape = カードの形状
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // 角を丸くする
-        ),
-
-        child: ListTile(
-          //onTapについて
-          //カードをタップした時の処理
-          //ここでは達成状態を切り替える
-          onTap: () => _toggleHabitCompletion(habit),
-
-          // contentPadding = 内側の余白
-          contentPadding: const EdgeInsets.all(16),
-
-          // leading = 左側に表示する要素
-          leading: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              // Color() = 色を指定
-              // habit.color = データベースに保存されている色コード
-              // ignore: deprecated_member_use
-              color: Color(habit.color).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(habit.emoji, style: const TextStyle(fontSize: 28)),
-            ),
+          // shape = カードの形状
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // 角を丸くする
           ),
 
-          // title = タイトル部分
-          title: Text(
-            habit.name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          child: ListTile(
+            // onTap について:
+            // カードをタップした時の処理
+            // 今日対象の日のみタップ可能にする
+            onTap: isTargetDay ? () => _toggleHabitCompletion(habit) : null,
 
-          // subtitle = サブタイトル部分
-          subtitle: Text(
-            '目標: 週${habit.targetFrequency}回',
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+            // contentPadding = 内側の余白
+            contentPadding: const EdgeInsets.all(16),
 
-          // trailing = 右側に表示する要素
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              //達成済みの場合はチェックマークを表示
-              if (isCompleted)
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Color(habit.color),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 20),
-                ),
-              const SizedBox(width: 8),
-              //色のバー
-              Container(
-                width: 4,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(habit.color),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+            // leading = 左側に表示する要素
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Color(habit.color).withOpacity(isTargetDay ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
+              child: Center(
+                child: Text(habit.emoji, style: const TextStyle(fontSize: 28)),
+              ),
+            ),
+
+            // title = タイトル部分
+            title: Text(
+              habit.name,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                // 達成済みの場合は取り消し線を表示
+                decoration: isCompleted ? TextDecoration.lineThrough : null,
+                color: isTargetDay
+                    ? (isCompleted ? Colors.grey : null)
+                    : Colors.grey,
+              ),
+            ),
+
+            // subtitle = サブタイトル部分
+            subtitle: Text(
+              isTargetDay ? '目標: 週${habit.targetFrequency}回' : '今日は対象外',
+              style: TextStyle(
+                fontSize: 14,
+                color: isTargetDay ? Colors.grey : Colors.grey.shade400,
+              ),
+            ),
+
+            // trailing = 右側に表示する要素
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 達成済みかつ今日対象の場合はチェックマークを表示
+                if (isCompleted && isTargetDay)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Color(habit.color),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                // 色のバー
+                Container(
+                  width: 4,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Color(
+                      habit.color,
+                    ).withOpacity(isTargetDay ? 1.0 : 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

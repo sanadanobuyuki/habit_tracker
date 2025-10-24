@@ -14,12 +14,12 @@ class DatabaseService {
   //データベースを取得する
 
   //処理:
-  //1回目：データベースがなければ作成、あれば開く
-  //二回目以降：既に開いているデータベースを返す
+  //1回目:データベースがなければ作成、あれば開く
+  //二回目以降:既に開いているデータベースを返す
   Future<Database> get database async {
     //Future<Database>について
     //Future =「未来の値」を表す型。時間がかかる処理の結果を表す
-    //例：データベースを開くのに0.1秒かかる場合、その0.1秒後の結果を表す
+    //例:データベースを開くのに0.1秒かかる場合、その0.1秒後の結果を表す
 
     if (_database != null) {
       //すでにデータベースが開いていたらそれを返す
@@ -50,13 +50,38 @@ class DatabaseService {
     final path = join(dbPath, 'habit_flow.db');
 
     //openDatabase()=データベースを開く
-    //version:1 =データベースのバージョン(更新時に利用)
+    //version:2 =データベースのバージョン(曜日対応のため2に変更)
     //onCreate =初回作成時に実行する関数
+    //onUpgrade =バージョンアップ時に実行する関数
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // バージョンを2に変更
       onCreate: _createTables, //テーブル作成処理を呼び出す
+      onUpgrade: _onUpgrade, // アップグレード処理を追加
     );
+  }
+
+  // データベースのアップグレード処理
+  // 既存のデータベースがある場合、ここで変更を適用
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // バージョン1から2へのアップグレード
+      // 既存のhabitsテーブルを削除して再作成
+      await db.execute('DROP TABLE IF EXISTS habits');
+      await db.execute('DROP TABLE IF EXISTS habit_records');
+
+      // 新しいテーブルを作成
+      await _createHabitsTable(db);
+      await _createHabitRecordsTable(db);
+
+      // インデックスも再作成
+      await db.execute(
+        'CREATE INDEX idx_habit_records_date ON habit_records(date)',
+      );
+      await db.execute(
+        'CREATE INDEX idx_habit_records_habit_id ON habit_records(habit_id)',
+      );
+    }
   }
 
   //テーブルを作成する(初回のみ実行)
@@ -70,105 +95,105 @@ class DatabaseService {
   //Future<void>=時間がかかる処理だけど、結果として返す値はない
 
   Future<void> _createTables(Database db, int version) async {
-    //=========habitsテーブル=========
-    //役割:ユーザーが登録した習慣の情報の保存
-    //例:「朝の運動」「読書」「水を飲む」
-    await db.execute('''
-      CREATE TABLE habits(
-       id TEXT PRIMARY KEY,                      --習慣の一意な識別子
-       name TEXT NOT NULL,                       --習慣の名前  
-       emoji TEXT,                               --習慣を表す絵文字
-       color INTEGER,                           --習慣の表示色
-       target_frequency INTEGER DEFAULT 7,       --目標頻度（週あたりの回数）
-       created_at INTEGER NOT NULL,              --習慣の作成日時（UNIXタイムスタンプ）
-       is_deleted INTEGER DEFAULT 0              --削除フラグ（0=有効、1=削除済み）
-       )
-       ''');
+    await _createHabitsTable(db);
+    await _createHabitRecordsTable(db);
+    await _createAchievementsTable(db);
+    await _createUserAchievementsTable(db);
+    await _createThemesTable(db);
+    await _createSettingsTable(db);
 
-    //========habit_recordsテーブル=========
-    //役割:毎日の習慣達成記録を保存
-    //例:「2024-10-02に朝の運動を達成した」という記録
-    await db.execute('''
-      CREATE TABLE habit_records(
-       id TEXT PRIMARY KEY,                      --記録の一意な識別子
-       habit_id TEXT NOT NULL,                   --習慣のID(habitsテーブルと関連付け)
-       date TEXT NOT NULL,                       --記録日(YYYY-MM-DD形式)
-       completed INTEGER DEFAULT 0,              --達成フラグ（0=未達成、1=達成）
-       note TEXT,                                --記録に関するメモ
-       recorded_at INTEGER NOT NULL,              --記録日時
-       FOREIGN KEY (habit_id) REFERENCES habits (id) ON DELETE CASCADE
-       -- FOREIGN KEY =habit_idはhabitsテーブルのidを参照
-       -- ON DELETE CASCADE =習慣を削除すると関連記録も削除
-        )
-        ''');
-
-    //===========achirvrmentsテーブル=========
-    //役割:実績の定義を保存(アプリ内で固定)
-    //例:「7日連続達成」「30日間継続」など
-    await db.execute('''
-      CREATE TABLE achievements(
-       id TEXT PRIMARY KEY,                      --実績の一意な識別子
-       name TEXT NOT NULL,                       --実績の名前
-       description TEXT,                         --実績の説明
-       condition_type TEXT,                     --達成条件のタイプ（例:連続日数、総達成回数）
-       condition_value INTEGER,                  --達成条件の値
-       rarity TEXT                             --実績の希少性（例:一般、レア、エピック
-       theme_id TEXT                             --実績のテーマID
-       )
-       ''');
-
-    //=======user_achivementsテーブル ========
-    //役割:ユーザーが獲得した実績の記録
-    //例:「2024-10-15に7日連続達成を達成した」
-    await db.execute('''
-      CREATE TABLE user_achievements(
-       id TEXT PRIMARY KEY,                      --記録の一意な識別子
-       achievement_id TEXT NOT NULL,             --実績のID(achievementsテーブルと関連付け)
-       unlocked_at INTEGER NOT NULL,            --実績を獲得した日時
-       theme_received INTEGER DEFAULT 0,          --報酬の受け取り=未受取、1=受取済み）
-      FOREIGN KEY (achievement_id) REFERENCES achievements (id)
-        )
-        ''');
-
-    //========themesテーブル==========
-    //役割: アプリのテーマ情報を保存
-    //例:「ダークモード」「ライトモード」「カラフルテーマ」
-    await db.execute('''
-      CREATE TABLE themes(
-        id TEXT PRIMARY KEY,                      --テーマの一意な識別子
-        name TEXT NOT NULL,                       --テーマの名前
-        is_default INTEGER DEFAULT 0,              --デフォルトテーマ（0=実績報酬、1=最初から使用可能)
-        primary_color TEXT,                       --メインカラー(16進数)
-        secondary_color TEXT,                     --サブカラー(16進数)
-        is_unlocked INTEGER DEFAULT 0,              --解禁済み（0=未解禁、1=解禁済み）
-        unlocked_at INTEGER                      --解禁日時
-        )
-        ''');
-
-    // ========== settingsテーブル ==========
-    // 役割：ユーザーの設定情報を保存
-    // 例：「現在のテーマはピンク」「通知はON」など
-    await db.execute('''
-      CREATE TABLE settings (
-        key TEXT PRIMARY KEY,    -- 設定キー（例：current_theme_id）
-        value TEXT,              -- 設定値（例：theme_pink）
-        updated_at INTEGER       -- 更新日時
-      )
-    ''');
-
-    //=======インデックスの作成=======
-    //役割:データベースの検索を高速化
-    //例:「この日付のすべての記録を取得」という検索が多いので、日付でインデックスを作成
-
-    //日付で検索数r時を高速化
+    // インデックスの作成
     await db.execute(
       'CREATE INDEX idx_habit_records_date ON habit_records(date)',
     );
-
-    //習慣IDで検索時を高速化
     await db.execute(
       'CREATE INDEX idx_habit_records_habit_id ON habit_records(habit_id)',
     );
+  }
+
+  // habitsテーブルを作成
+  Future<void> _createHabitsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE habits(
+       id TEXT PRIMARY KEY,
+       name TEXT NOT NULL,
+       emoji TEXT,
+       color INTEGER,
+       target_frequency INTEGER DEFAULT 7,
+       days_of_week TEXT,
+       created_at INTEGER NOT NULL,
+       is_deleted INTEGER DEFAULT 0
+       )
+       ''');
+  }
+
+  // habit_recordsテーブルを作成
+  Future<void> _createHabitRecordsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE habit_records(
+       id TEXT PRIMARY KEY,
+       habit_id TEXT NOT NULL,
+       date TEXT NOT NULL,
+       completed INTEGER DEFAULT 0,
+       note TEXT,
+       recorded_at INTEGER NOT NULL,
+       FOREIGN KEY (habit_id) REFERENCES habits (id) ON DELETE CASCADE
+        )
+        ''');
+  }
+
+  // achievementsテーブルを作成
+  Future<void> _createAchievementsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE achievements(
+       id TEXT PRIMARY KEY,
+       name TEXT NOT NULL,
+       description TEXT,
+       condition_type TEXT,
+       condition_value INTEGER,
+       rarity TEXT,
+       theme_id TEXT
+       )
+       ''');
+  }
+
+  // user_achievementsテーブルを作成
+  Future<void> _createUserAchievementsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE user_achievements(
+       id TEXT PRIMARY KEY,
+       achievement_id TEXT NOT NULL,
+       unlocked_at INTEGER NOT NULL,
+       theme_received INTEGER DEFAULT 0,
+      FOREIGN KEY (achievement_id) REFERENCES achievements (id)
+        )
+        ''');
+  }
+
+  // themesテーブルを作成
+  Future<void> _createThemesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE themes(
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        is_default INTEGER DEFAULT 0,
+        primary_color TEXT,
+        secondary_color TEXT,
+        is_unlocked INTEGER DEFAULT 0,
+        unlocked_at INTEGER
+        )
+        ''');
+  }
+
+  // settingsテーブルを作成
+  Future<void> _createSettingsTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at INTEGER
+      )
+    ''');
   }
 
   //=========習慣(habits)の操作=========
@@ -176,28 +201,34 @@ class DatabaseService {
   //習慣を追加する
   //requiredについて
   //required =この引数は必須(省略できない)
+  //
+  // daysOfWeek について:
+  // null = 毎日
+  // "1,3,5" = 月・水・金のみ (1=月, 2=火, ..., 7=日)
   Future<void> insertHabit({
     required String id, //習慣のID
     required String name, //習慣の名前
     required String emoji, //習慣の絵文字
     required int color, //習慣の表示色
     required int targetFrequency, //目標頻度
+    String? daysOfWeek, //曜日指定 (null=毎日)
     required int createdAt, //作成日時
   }) async {
     final db = await database;
 
     //insert()=データベースに新しい行を追加する
     //habitsテーブルに新しい習慣を追加
-    //conflictAlgorithm.replace = 既に同じIDが存在する場合は上書きする テスト用
+    //conflictAlgorithm.replace = 同じIDがあれば上書き(テスト用)
     await db.insert('habits', {
       'id': id,
       'name': name,
       'emoji': emoji,
       'color': color,
       'target_frequency': targetFrequency,
+      'days_of_week': daysOfWeek, // 追加
       'created_at': createdAt,
       'is_deleted': 0, //新規追加時は削除フラグを0に設定
-    }, conflictAlgorithm: ConflictAlgorithm.replace); //テスト用
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   //すべての習慣を取得する
@@ -237,12 +268,18 @@ class DatabaseService {
     String? name, //新しい習慣名(省略可能)
     String? emoji, //新しい絵文字(省略可能)
     int? color, //新しい表示色(省略可能)
+    String? daysOfWeek, //新しい曜日指定(省略可能)
   }) async {
     final db = await database;
 
     await db.update(
       'habits',
-      {'name': name, 'emoji': emoji, 'color': color},
+      {
+        'name': name,
+        'emoji': emoji,
+        'color': color,
+        'days_of_week': daysOfWeek,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -309,9 +346,9 @@ class DatabaseService {
 
   // 特定の習慣の全ての記録を取得する
   //
-  // 使い方の例：
+  // 使い方の例:
   // List<Map> records = await DatabaseService().getRecordsByHabit('habit_001');
-  //  結果：2024-10-02の朝の運動の記録、2024-10-01の記録、... と新しい順に返される
+  //  結果:2024-10-02の朝の運動の記録、2024-10-01の記録、... と新しい順に返される
   Future<List<Map<String, dynamic>>> getRecordsByHabit(String habitId) async {
     final db = await database;
 
@@ -327,7 +364,7 @@ class DatabaseService {
 
   // 記録を更新する
   //
-  // 使い方の例：
+  // 使い方の例:
   // await DatabaseService().updateRecord(
   //   id: 'record_001',
   //   completed: 1,  // 1 = 達成に変更
@@ -351,7 +388,7 @@ class DatabaseService {
 
   // 全ての実績を取得する
   //
-  // 使い方の例：
+  // 使い方の例:
   // List<Map> achievements = await DatabaseService().getAllAchievements();
   Future<List<Map<String, dynamic>>> getAllAchievements() async {
     final db = await database;
@@ -362,7 +399,7 @@ class DatabaseService {
 
   // 設定を保存する
   //
-  // 使い方の例：
+  // 使い方の例:
   // await DatabaseService().saveSetting('current_theme_id', 'theme_pink');
   //
   // これにより「現在使用中のテーマはピンク」という設定が保存される
@@ -380,9 +417,9 @@ class DatabaseService {
 
   // 設定を取得する
   //
-  // 使い方の例：
+  // 使い方の例:
   // String? themeId = await DatabaseService().getSetting('current_theme_id');
-  // // 結果：'theme_pink' など、または null（設定がなかった場合）
+  // // 結果:'theme_pink' など、または null(設定がなかった場合)
   Future<String?> getSetting(String key) async {
     final db = await database;
 
@@ -397,9 +434,9 @@ class DatabaseService {
     return result.isNotEmpty ? result.first['value'] as String? : null;
   }
 
-  // データベースをクローズする（アプリ終了時に実行）
+  // データベースをクローズする(アプリ終了時に実行)
   //
-  // 使い方の例：
+  // 使い方の例:
   // await DatabaseService().closeDatabase();
   Future<void> closeDatabase() async {
     if (_database != null) {
