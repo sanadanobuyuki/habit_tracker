@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
 
+//新しい習慣を追加する画面
 class AddHabit extends StatefulWidget {
   const AddHabit({super.key});
 
@@ -20,6 +21,13 @@ class _AddHabitState extends State<AddHabit> {
 
   //目標頻度（初期値7回/週）
   int _targetFrequency = 7;
+
+  //曜日設定の種類
+  //true =毎日 false = 曜日指定
+  bool _isEveryDay = true;
+
+  //選択された曜日のリスト
+  List<int> _selectedDays = [];
 
   //利用可能な絵文字リスト
   final List<String> _availableEmojis = [
@@ -46,6 +54,10 @@ class _AddHabitState extends State<AddHabit> {
     0xFF8B5CF6, // 紫
     0xFFEC4899, // ピンク
   ];
+
+  //曜日の名前リスト
+  final List<String> _dayNames = ['月', '火', '水', '木', '金', '土', '日'];
+
   @override
   void dispose() {
     //dispose()について
@@ -80,12 +92,31 @@ class _AddHabitState extends State<AddHabit> {
       return;
     }
 
+    //曜日指定の場合、曜日が選択されているかチェック
+    if (!_isEveryDay && _selectedDays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('曜日を選択して下さい'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     //データベースに保存
     final db = DatabaseService();
 
     //新しい習慣IDを生成
     //DataTime.now().millisecondsSinceEpoch=現在の日時をミリ秒で取得
     final habitId = 'habit_${DateTime.now().millisecondsSinceEpoch}';
+
+    //曜日データを文字列に変換
+    //毎日の場合はNULL
+    String? daysOfWeek;
+    if (!_isEveryDay) {
+      _selectedDays.sort(); // 並び替え
+      daysOfWeek = _selectedDays.join(',');
+    }
 
     try {
       await db.insertHabit(
@@ -94,6 +125,7 @@ class _AddHabitState extends State<AddHabit> {
         emoji: _selectedEmoji,
         color: _selectedColor,
         targetFrequency: _targetFrequency,
+        daysOfWeek: daysOfWeek,
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
 
@@ -250,6 +282,127 @@ class _AddHabitState extends State<AddHabit> {
                 );
               }).toList(),
             ),
+
+            const SizedBox(height: 24),
+
+            // 曜日設定
+            const Text(
+              '実施する曜日',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+
+            // 毎日 / 曜日指定の切り替え
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isEveryDay = true;
+                        _selectedDays.clear();
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _isEveryDay
+                            ? Colors.purple
+                            : Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '毎日',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: _isEveryDay ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isEveryDay = false;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: !_isEveryDay
+                            ? Colors.purple
+                            : Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '曜日を選択',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: !_isEveryDay ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // 曜日選択UI（曜日指定の場合のみ表示）
+            if (!_isEveryDay) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(7, (index) {
+                  final dayNumber = index + 1; // 1〜7
+                  final isSelected = _selectedDays.contains(dayNumber);
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedDays.remove(dayNumber);
+                        } else {
+                          _selectedDays.add(dayNumber);
+                        }
+                      });
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.purple
+                            : Colors.grey.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? Border.all(color: Colors.purple, width: 2)
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _dayNames[index],
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
 
             const SizedBox(height: 24),
 
