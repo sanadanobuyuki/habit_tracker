@@ -27,7 +27,7 @@ class _AddHabitState extends State<AddHabit> {
   bool _isEveryDay = true;
 
   //選択された曜日のリスト
-  List<int> _selectedDays = [];
+  final List<int> _selectedDays = [];
 
   //利用可能な絵文字リスト
   final List<String> _availableEmojis = [
@@ -219,7 +219,9 @@ class _AddHabitState extends State<AddHabit> {
                     height: 56,
                     decoration: BoxDecoration(
                       color: isSelected
+                          // ignore: deprecated_member_use
                           ? Colors.purple.withOpacity(0.2)
+                          // ignore: deprecated_member_use
                           : Colors.grey.withOpacity(0.1),
                       border: isSelected
                           ? Border.all(color: Colors.purple, width: 2)
@@ -268,6 +270,7 @@ class _AddHabitState extends State<AddHabit> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
+                                // ignore: deprecated_member_use
                                 color: Color(color).withOpacity(0.5),
                                 blurRadius: 8,
                                 spreadRadius: 2,
@@ -308,6 +311,7 @@ class _AddHabitState extends State<AddHabit> {
                       decoration: BoxDecoration(
                         color: _isEveryDay
                             ? Colors.purple
+                            // ignore: deprecated_member_use
                             : Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -337,6 +341,7 @@ class _AddHabitState extends State<AddHabit> {
                       decoration: BoxDecoration(
                         color: !_isEveryDay
                             ? Colors.purple
+                            // ignore: deprecated_member_use
                             : Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -382,6 +387,7 @@ class _AddHabitState extends State<AddHabit> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? Colors.purple
+                            // ignore: deprecated_member_use
                             : Colors.grey.withOpacity(0.1),
                         shape: BoxShape.circle,
                         border: isSelected
@@ -431,6 +437,7 @@ class _AddHabitState extends State<AddHabit> {
                   width: 80,
                   height: 48,
                   decoration: BoxDecoration(
+                    // ignore: deprecated_member_use
                     color: Colors.purple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),

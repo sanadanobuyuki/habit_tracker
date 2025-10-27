@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart'; // 追加
-import 'package:path/path.dart'; // 追加
+// import 'package:sqflite/sqflite.dart'; // 追加
+// import 'package:path/path.dart'; // 追加
 import 'services/database_service.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
