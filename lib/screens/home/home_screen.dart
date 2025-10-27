@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 1. テストデータを追加(完了を待つ)
   // 2. 習慣データを読み込む
   Future<void> _initializeData() async {
-    await _addTestHabits(); // テストデータ追加を待つ
+    //await _addTestHabits(); // テストデータ追加を待つ
     await _loadHabits(); // その後、習慣を読み込む
   }
 

@@ -16,9 +16,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // データベースを削除 (開発中のみ)
-  final dbPath = await getDatabasesPath();
-  final path = join(dbPath, 'habit_flow.db');
-  await deleteDatabase(path);
+  // final dbPath = await getDatabasesPath();
+  // final path = join(dbPath, 'habit_flow.db');
+  // await deleteDatabase(path);
 
   // データベースの初期化
   // await = データベースが開くまで待つ
