@@ -80,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       // 既にデータがある場合はエラーになるが問題なし
+      // ignore: avoid_print
       print('テストデータ追加: $e');
     }
   }
@@ -418,6 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: Color(habit.color).withOpacity(isTargetDay ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -476,6 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: Color(
                       habit.color,
+                      // ignore: deprecated_member_use
                     ).withOpacity(isTargetDay ? 1.0 : 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
