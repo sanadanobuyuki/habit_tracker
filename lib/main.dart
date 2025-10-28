@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-// import 'package:sqflite/sqflite.dart'; // 追加
-// import 'package:path/path.dart'; // 追加
+import 'package:provider/provider.dart';
 import 'services/database_service.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
+import 'screens/settings/settings_screen.dart';
 
 /// async について:
 /// データベース初期化などの時間がかかる処理があるため、
-/// asyncをつける
+/// async をつける
 void main() async {
   // WidgetsFlutterBinding.ensureInitialized() について:
-  /// Flutterの初期化を行う
+  /// Flutter の初期化を行う
   /// データベースやプラグインを使う前に必ず実行する必要がある
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -25,7 +26,7 @@ void main() async {
   await DatabaseService().database;
 
   // アプリを起動
-  // runApp() = Flutterアプリを起動する関数
+  // runApp() = Flutter アプリを起動する関数
   runApp(const MyApp());
 }
 
@@ -34,28 +35,38 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      // title = アプリ名
-      title: 'ハビコツ',
+    // ChangeNotifierProvider について:
+    // ThemeProvider を全体で使えるようにする
+    // Provider パターンで状態管理を行う
+    return ChangeNotifierProvider(
+      create: (context) {
+        final provider = ThemeProvider();
+        // アプリ起動時にテーマを読み込む
+        provider.loadTheme();
+        return provider;
+      },
+      child: Consumer<ThemeProvider>(
+        // Consumer について:
+        // ThemeProvider の変更を監視して、変更があったら自動で再描画
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            // title = アプリ名
+            title: 'ハビコツ',
 
-      // theme = アプリ全体のテーマ設定
-      theme: ThemeData(
-        // primarySwatch = メインカラー
-        // Colors.purple = 紫色
-        primarySwatch: Colors.purple,
+            // theme = アプリ全体のテーマ設定
+            // ThemeProvider から現在のテーマを取得
+            theme: themeProvider.currentTheme.themeData,
 
-        // useMaterial3 = Material Design 3を使用
-        // trueにすると、より現代的なデザインになる
-        useMaterial3: true,
+            // home = 最初に表示する画面
+            home: const MainScreen(),
+          );
+        },
       ),
-
-      // home = 最初に表示する画面
-      home: const MainScreen(),
     );
   }
 }
 
-// MainScreen = BottomNavigationBarを持つメイン画面
+// MainScreen = BottomNavigationBar を持つメイン画面
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -72,6 +83,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const CalendarScreen(),
     const AchievementsScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -104,6 +116,7 @@ class _MainScreenState extends State<MainScreen> {
             label: "カレンダー",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: "実績"),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "設定"),
         ],
       ),
     );

@@ -19,6 +19,7 @@ class HabitController {
   ///
   /// 戻り値:
   /// - habits: 習慣のリスト
+  // ignore: unintended_html_in_doc_comment
   /// - todayRecords: 今日の達成記録 Map<habit_id, completed>
   Future<({List<Habit> habits, Map<String, int> todayRecords})>
   loadHabits() async {
