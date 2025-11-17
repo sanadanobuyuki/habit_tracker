@@ -9,6 +9,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/themed_scaffold.dart';
 
 /// async について:
 /// データベース初期化などの時間がかかる処理があるため、
@@ -95,7 +96,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ThemedScaffold(
       // body = 現在選択されているタブの画面を表示
       body: _pages[_currentIndex],
 
