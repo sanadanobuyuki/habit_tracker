@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/user_achievement.dart';
 
 //DatabaseServiceクラス
 //このクラスの役割
@@ -395,6 +396,220 @@ class DatabaseService {
     return await db.query('achievements');
   }
 
+  // ========== ユーザー実績(user_achievements)の操作 ==========
+  //
+  /// ユーザー実績を追加する（実績を解除したときに呼ぶ）
+  ///
+  /// 使い方の例:
+  /// // 実績を解除したとき
+  /// final userAchievement = UserAchievement(
+  ///   id: 'user_ach_${DateTime.now().millisecondsSinceEpoch}',
+  ///   achievementId: 'ach_first_habit',
+  ///   unlockedAt: DateTime.now(),
+  ///   themeReceived: false,
+  /// );
+  /// await db.insertUserAchievement(userAchievement);
+  ///
+  /// 引数:
+  /// - userAchievement: 追加する UserAchievement オブジェクト
+  Future<void> insertUserAchievement(dynamic userAchievement) async {
+    final db = await database;
+
+    // UserAchievement オブジェクトを Map に変換
+    final map = userAchievement.toMap();
+
+    // user_achievements テーブルに追加
+    // conflictAlgorithm.replace について:
+    // - 同じ id が既に存在する場合は上書き
+    // - 通常は発生しないが、念のため
+    await db.insert(
+      'user_achievements',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// すべてのユーザー実績を取得する
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// // 解除済みの実績をすべて取得
+  /// final userAchievementsData = await db.getUserAchievements();
+  ///
+  /// // Map のリストを UserAchievement のリストに変換
+  /// final userAchievements = userAchievementsData
+  ///     .map((data) => UserAchievement.fromMap(data))
+  ///     .toList();
+  ///
+  /// print('解除済み: ${userAchievements.length}個');
+  /// ```
+  ///
+  /// 戻り値:
+  // ignore: unintended_html_in_doc_comment
+  /// - List<Map<String, dynamic>>: ユーザー実績のリスト
+  ///
+  /// 並び順:
+  /// - unlocked_at DESC = 新しい解除から順に
+  Future<List<Map<String, dynamic>>> getUserAchievements() async {
+    final db = await database;
+
+    // user_achievements テーブルからすべて取得
+    // orderBy: 'unlocked_at DESC' について:
+    // - DESC = 降順（新しい→古い）
+    // - ASC = 昇順（古い→新しい）
+    // - 最近解除した実績を先に表示するため DESC
+    return await db.query('user_achievements', orderBy: 'unlocked_at DESC');
+  }
+
+  /// 特定の実績が解除済みかチェック
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// // 'ach_first_habit' が解除済みか確認
+  /// final isUnlocked = await db.isAchievementUnlocked('ach_first_habit');
+  ///
+  /// if (isUnlocked) {
+  ///   print('この実績は既に解除済みです');
+  /// } else {
+  ///   print('この実績はまだ解除していません');
+  /// }
+  /// ```
+  ///
+  /// 引数:
+  /// - achievementId: 確認する実績のID
+  ///
+  /// 戻り値:
+  /// - true: 解除済み
+  /// - false: 未解除
+  Future<bool> isAchievementUnlocked(String achievementId) async {
+    final db = await database;
+
+    // where: 'achievement_id = ?' について:
+    // - achievement_id が指定した値と一致する行を検索
+    // - ? はプレースホルダー（whereArgs で値を指定）
+    //
+    // whereArgs: [achievementId] について:
+    // - ? に入る値
+    // - SQL インジェクション対策のため、直接埋め込まない
+    final result = await db.query(
+      'user_achievements',
+      where: 'achievement_id = ?',
+      whereArgs: [achievementId],
+    );
+
+    // result.isNotEmpty について:
+    // - リストが空でない = データが見つかった = 解除済み
+    // - リストが空 = データがない = 未解除
+    return result.isNotEmpty;
+  }
+
+  /// ユーザー実績を更新する（テーマ受け取り状況を更新）
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// // テーマを受け取ったときに呼ぶ
+  /// final userAchievement = UserAchievement(...);
+  ///
+  /// // themeReceived を true に変更した新しいオブジェクトを作成
+  /// final updated = userAchievement.copyWith(themeReceived: true);
+  ///
+  /// // データベースを更新
+  /// await db.updateUserAchievement(updated);
+  /// ```
+  ///
+  /// 引数:
+  /// - userAchievement: 更新する UserAchievement オブジェクト
+  Future<void> updateUserAchievement(dynamic userAchievement) async {
+    final db = await database;
+
+    // UserAchievement オブジェクトを Map に変換
+    final map = userAchievement.toMap();
+
+    // user_achievements テーブルを更新
+    // where: 'id = ?' について:
+    // - id が一致する行を更新
+    // - id は PRIMARY KEY なので必ず1行だけ更新される
+    await db.update(
+      'user_achievements',
+      map,
+      where: 'id = ?',
+      whereArgs: [userAchievement.id],
+    );
+  }
+
+  /// 特定の実績のユーザー記録を取得
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// // 'ach_first_habit' の解除記録を取得
+  /// final record = await db.getUserAchievementByAchievementId('ach_first_habit');
+  ///
+  /// if (record != null) {
+  ///   final userAchievement = UserAchievement.fromMap(record);
+  ///   print('解除日: ${userAchievement.formattedDate}');
+  /// } else {
+  ///   print('まだ解除していません');
+  /// }
+  ///
+  /// 引数:
+  /// - achievementId: 実績のID
+  ///
+  /// 戻り値:
+  /// - Map<String, dynamic>: ユーザー実績のデータ
+  /// - null: 未解除
+  Future<Map<String, dynamic>?> getUserAchievementByAchievementId(
+    String achievementId,
+  ) async {
+    final db = await database;
+
+    final result = await db.query(
+      'user_achievements',
+      where: 'achievement_id = ?',
+      whereArgs: [achievementId],
+    );
+
+    // result.isEmpty について:
+    // - リストが空 = データがない = null を返す
+    // - リストに要素がある = データがある = 最初の要素を返す
+    //
+    // result.first について:
+    // - リストの最初の要素を取得
+    // - achievement_id は FOREIGN KEY なので、
+    //   同じ achievement_id は1つしかないはず
+    return result.isEmpty ? null : result.first;
+  }
+
+  /// 解除済み実績の数を取得
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// final count = await db.getUnlockedAchievementCount();
+  /// print('解除済み: $count個');
+  /// ```
+  ///
+  /// 戻り値:
+  /// - int: 解除済み実績の数
+  Future<int> getUnlockedAchievementCount() async {
+    final db = await database;
+
+    // rawQuery について:
+    // - 生のSQLを実行
+    // - COUNT(*) = 行数をカウント
+    //
+    // COUNT(*) について:
+    // - テーブルの行数を数える SQL 関数
+    // - 結果: [{'COUNT(*)': 5}] のような形式
+    final result = await db.rawQuery('SELECT COUNT(*) FROM user_achievements');
+
+    // result.first['COUNT(*)'] について:
+    // - 結果の最初の行の 'COUNT(*)' カラムを取得
+    // - as int で int 型に変換
+    //
+    // ?? 0 について:
+    // - null の場合は 0 を返す
+    // - 念のため（通常は null にはならない）
+    return result.first['COUNT(*)'] as int? ?? 0;
+  }
   // ===== 設定(settings)の操作 =====
 
   // 設定を保存する
