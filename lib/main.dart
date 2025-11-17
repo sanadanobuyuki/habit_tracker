@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/data/achievement_data.dart';
 import 'package:provider/provider.dart';
 import 'services/database_service.dart';
+import 'data/achievement_data.dart';
 import 'providers/theme_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
@@ -23,7 +25,11 @@ void main() async {
 
   // データベースの初期化
   // await = データベースが開くまで待つ
-  await DatabaseService().database;
+  final db = DatabaseService();
+  await db.database;
+
+  //実績の初期化
+  await insertInitialAchievements(db);
 
   // アプリを起動
   // runApp() = Flutter アプリを起動する関数
