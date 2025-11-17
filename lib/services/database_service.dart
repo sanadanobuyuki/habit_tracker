@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+// ignore: unused_import
 import '../models/user_achievement.dart';
 
 //DatabaseServiceクラス

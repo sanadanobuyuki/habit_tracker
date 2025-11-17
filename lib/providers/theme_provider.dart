@@ -15,6 +15,7 @@ import '../services/database_service.dart';
 ///
 /// 使い方
 ///  //テーマ取得
+// ignore: unintended_html_in_doc_comment
 /// final themeProvider = Provider.of<ThemeProvider>(context);
 /// final currentTheme = themeProvider.currentTheme;
 /// //テーマ変更
