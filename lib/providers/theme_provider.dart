@@ -7,6 +7,18 @@ import '../services/database_service.dart';
 /// - アプリ全体のテーマを管理
 /// - テーマの切り替えと保存
 /// - ChangeNotifier を継承して、テーマ変更を他のウィジェットに通知
+///
+/// ChangeNotifier について:
+/// 状態が変更されたことを他ウィジェットに通知する仕組み
+/// notifyListeners()を呼ぶと、このクラスを監視しているすべてのウィジェットが再描画される
+/// これにより、テーマ変更時にUIが自動的に更新される
+///
+/// 使い方
+///  //テーマ取得
+/// final themeProvider = Provider.of<ThemeProvider>(context);
+/// final currentTheme = themeProvider.currentTheme;
+/// //テーマ変更
+/// await themeProvider.setTheme('dark');
 class ThemeProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
 
@@ -20,11 +32,32 @@ class ThemeProvider extends ChangeNotifier {
       name: 'ライト',
       description: '明るいテーマ',
       themeData: ThemeData(
+        //brightness について
+        //Brightness.light: 明るいテーマ
+        //Brightness.dark: 暗いテーマ
+        // これにより、システム全体の明るさ設定に応じたUI調整が可能
         brightness: Brightness.light,
+
+        //primarySwatch について
+        //アプリの主要な色を設定
+        //Material Designのカラーパレットから選択
         primarySwatch: Colors.purple,
+
+        // useMaterial3 について
+        //Material Design 3 (MD3) を使用するかどうか
+        //trueに設定すると、MD3の新しいデザイン要素やコンポーネントが有効になる
         useMaterial3: true,
+
+        // scaffoldBackgroundColor について
+        //画面全体のは背景色を設定
         scaffoldBackgroundColor: Colors.white,
+
+        // cardColor について
+        //cardウィジェットの背景色を設定
         cardColor: Colors.white,
+
+        // appBarTheme について
+        //AppBarのテーマをカスタマイズ
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.purple,
           foregroundColor: Colors.white,
@@ -101,9 +134,14 @@ class ThemeProvider extends ChangeNotifier {
   String get currentThemeId => _currentThemeId;
 
   /// 現在のテーマを取得
+  /// 1. _themes リストから現在のテーマIDに一致するテーマを検索
+  /// 2. 見つからない場合はデフォルトでライトテーマを返す
   AppTheme get currentTheme {
     return _themes.firstWhere(
+      //firstWhere について
+      // 条件に一致する最初の要素を返す
       (theme) => theme.id == _currentThemeId,
+      //条件に一致する要素が見つからなかった場合のデフォルト値
       orElse: () => _themes[0], // デフォルトはライト
     );
   }
