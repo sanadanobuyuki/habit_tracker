@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/data/achievement_data.dart';
 import 'package:provider/provider.dart';
 import 'services/database_service.dart';
+// ignore: duplicate_import
+import 'data/achievement_data.dart';
 import 'providers/theme_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/themed_scaffold.dart';
 
 /// async について:
 /// データベース初期化などの時間がかかる処理があるため、
@@ -23,7 +27,11 @@ void main() async {
 
   // データベースの初期化
   // await = データベースが開くまで待つ
-  await DatabaseService().database;
+  final db = DatabaseService();
+  await db.database;
+
+  //実績の初期化
+  await insertInitialAchievements(db);
 
   // アプリを起動
   // runApp() = Flutter アプリを起動する関数
@@ -91,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ThemedScaffold(
       // body = 現在選択されているタブの画面を表示
       body: _pages[_currentIndex],
 
