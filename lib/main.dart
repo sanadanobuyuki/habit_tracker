@@ -57,6 +57,9 @@ class MyApp extends StatelessWidget {
             // ThemeProvider から現在のテーマを取得
             theme: themeProvider.currentTheme.themeData,
 
+            //debugフラグを表示しないようにする
+            debugShowCheckedModeBanner: false,
+
             // home = 最初に表示する画面
             home: const MainScreen(),
           );
