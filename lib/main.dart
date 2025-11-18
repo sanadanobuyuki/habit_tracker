@@ -53,23 +53,44 @@ class MyApp extends StatelessWidget {
         provider.loadTheme();
         return provider;
       },
-      child: Consumer<ThemeProvider>(
-        // Consumer について:
-        // ThemeProvider の変更を監視して、変更があったら自動で再描画
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            // title = アプリ名
-            title: 'ハビコツ',
+      // Consumer を MaterialApp の中に移動することで、
+      // テーマ変更時に MaterialApp 自体は再構築されず、
+      // theme プロパティだけが更新される
+      child: const _MaterialAppWithTheme(),
+    );
+  }
+}
 
-            // theme = アプリ全体のテーマ設定
-            // ThemeProvider から現在のテーマを取得
-            theme: themeProvider.currentTheme.themeData,
+/// MaterialApp をラップして、theme だけを監視
+///
+/// これにより、テーマ変更時に MaterialApp が再構築されず、
+/// ナビゲーションスタック（画面履歴）が保持される
+class _MaterialAppWithTheme extends StatelessWidget {
+  const _MaterialAppWithTheme();
 
-            // home = 最初に表示する画面
-            home: const MainScreen(),
-          );
-        },
-      ),
+  @override
+  Widget build(BuildContext context) {
+    // Selector を使って theme だけを監視
+    // Consumer と違い、指定したプロパティだけを監視できる
+    return Selector<ThemeProvider, ThemeData>(
+      // どのプロパティを監視するか
+      selector: (context, themeProvider) =>
+          themeProvider.currentTheme.themeData,
+      // theme が変更された時だけ再構築
+      builder: (context, themeData, child) {
+        return MaterialApp(
+          // title = アプリ名
+          title: 'ハビコツ',
+
+          // theme = アプリ全体のテーマ設定
+          theme: themeData,
+
+          // home = 最初に表示する画面
+          home: child,
+        );
+      },
+      // child は再利用されるため、MainScreen は再構築されない
+      child: const MainScreen(),
     );
   }
 }
@@ -96,6 +117,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // MainScreen では通常の Scaffold を使用
+    // （ThemedScaffold を使うと、テーマ変更時に全体が再構築される）
     return ThemedScaffold(
       // body = 現在選択されているタブの画面を表示
       body: _pages[_currentIndex],
