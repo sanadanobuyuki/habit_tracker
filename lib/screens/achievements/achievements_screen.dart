@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/database_service.dart';
+import '../../models/achievement.dart';
+import '../../models/user_achievement.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -8,6 +11,48 @@ class AchievementsScreen extends StatefulWidget {
 }
 
 class _AchivementsScreenState extends State<AchievementsScreen> {
+  //すべての実績
+  List<Achievement> _achievements = [];
+
+  //ユーザーが解除した実績
+  List<UserAchievement> _userAchievements = [];
+
+  //ロード中かどうか
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAchievements();
+  }
+
+  //実績データを読み込む
+  Future<void> _loadAchievements() async {
+    setState(() => _isLoading = true);
+
+    final db = DatabaseService();
+
+    //すべての実績を取得
+    final achievementsData = await db.getAllAchievements();
+    final achievements = achievementsData
+        .map((data) => Achievement.fromMap(data))
+        .toList();
+
+    //ユーザーが解除した実績を取得
+    final userAchievemetsSata = await db.getUserAchievements();
+    final userAchievements = userAchievemetsSata
+        .map((data) => UserAchievement.fromMap(data))
+        .toList();
+
+    setState(() {
+      _achievements = achievements;
+      _userAchievements = userAchievements;
+      _isLoading = false;
+    });
+  }
+
+  //特定の実績が解除済みかどうかをチェック
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
