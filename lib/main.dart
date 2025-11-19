@@ -83,7 +83,8 @@ class _MaterialAppWithTheme extends StatelessWidget {
           title: 'ハビコツ',
 
           // theme = アプリ全体のテーマ設定
-          theme: themeData,
+          // ThemeProvider から現在のテーマを取得
+          theme: themeProvider.currentTheme.themeData,
 
           // home = 最初に表示する画面
           home: child,
