@@ -84,7 +84,7 @@ class _MaterialAppWithTheme extends StatelessWidget {
 
           // theme = アプリ全体のテーマ設定
           // ThemeProvider から現在のテーマを取得
-          theme: themeProvider.currentTheme.themeData,
+          theme: themeData,
 
           // home = 最初に表示する画面
           home: child,
