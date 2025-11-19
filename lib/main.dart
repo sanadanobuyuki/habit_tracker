@@ -82,7 +82,7 @@ class _MaterialAppWithTheme extends StatelessWidget {
           // title = アプリ名
           title: 'ハビコツ',
 
-          //debugフラグを消すやつ
+          //debugフラグを消すやつaaaaaaaaaaaaaaaaaaaaaaaaaaaa
           debugShowCheckedModeBanner: false,
 
           // theme = アプリ全体のテーマ設定
