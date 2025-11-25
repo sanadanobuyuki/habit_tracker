@@ -395,4 +395,6 @@ class AppTheme {
     this.stripeWidth,
     this.isVertical,
   });
+
+  of(BuildContext context) {}
 }

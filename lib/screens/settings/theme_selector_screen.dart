@@ -57,13 +57,16 @@ class ThemeSelectorScreen extends StatelessWidget {
     bool isSelected,
     VoidCallback onTap,
   ) {
+    // 現在のテーマに応じた色を取得
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: isSelected ? 4 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isSelected
-            ? BorderSide(color: Theme.of(context).primaryColor, width: 2)
+            ? BorderSide(color: colorScheme.primary, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -76,7 +79,7 @@ class ThemeSelectorScreen extends StatelessWidget {
           child: Row(
             children: [
               // テーマのプレビュー
-              _buildThemePreview(theme),
+              _buildThemePreview(context, theme),
               const SizedBox(width: 16),
 
               // テーマ情報
@@ -90,14 +93,17 @@ class ThemeSelectorScreen extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : null,
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       theme.description,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -105,11 +111,7 @@ class ThemeSelectorScreen extends StatelessWidget {
 
               // 選択中のマーク
               if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).primaryColor,
-                  size: 32,
-                ),
+                Icon(Icons.check_circle, color: colorScheme.primary, size: 32),
             ],
           ),
         ),
@@ -120,13 +122,16 @@ class ThemeSelectorScreen extends StatelessWidget {
   /// テーマのプレビューを作成
   ///
   /// パターン背景も含めてプレビューを表示
-  Widget _buildThemePreview(AppTheme theme) {
+  Widget _buildThemePreview(BuildContext context, AppTheme theme) {
+    // 現在のテーマに応じた枠線の色を取得
+    final borderColor = Theme.of(context).colorScheme.outline;
+
     return Container(
       width: 60,
       height: 60,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -183,6 +188,7 @@ class ThemeSelectorScreen extends StatelessWidget {
         );
 
       case BackgroundPattern.solid:
+      default:
         // 単色の場合は従来のプレビュー（AppBarと背景色）
         return Column(
           children: [
