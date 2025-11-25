@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/data/achievement_data.dart';
 import 'package:provider/provider.dart';
+//データベース削除の際に必要　コメントアウト推奨
+// import 'package:sqflite/sqflite.dart';
+// import 'package:path/path.dart';
 import 'services/database_service.dart';
-// ignore: duplicate_import
-import 'data/achievement_data.dart';
 import 'providers/theme_provider.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
