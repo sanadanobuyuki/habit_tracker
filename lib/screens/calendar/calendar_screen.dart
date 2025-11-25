@@ -127,7 +127,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final colorScheme=Theme.of(context).colorScheme;
 
                                   //onSurfaceVariant:テーマに合わせた背景色
-    if (rate <= 0.0) return Color(colorScheme.onSurfaceVariant.value).withOpacity(0.1);
+    if (rate <= 0.0) return colorScheme.onSurfaceVariant.withValues(alpha:0.1);
     if (rate <= 0.2) return Colors.red.shade100;
     if (rate <= 0.4) return Colors.orange.shade200;
     if (rate <= 0.6) return Colors.yellow.shade400;
@@ -405,7 +405,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final color = _getHeatColor(rate);
 
         //テーマに合わせた色選択
-        final ColorScheme=Theme.of(context).colorScheme;
+        final colorScheme=Theme.of(context).colorScheme;
 
         //日付セルを表示
         return Container(
@@ -416,10 +416,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
             borderRadius: BorderRadius.circular(8), //角を丸く
           ),
           child: Center(child: Text(
+            
             '$day',
-
             //onSurface:背景に合わせた文字色を自動選択
-            style: TextStyle(color: ColorScheme.onSurface),
+            style: TextStyle(
+              color: rate>0.0
+                  ? Colors.black
+                  : colorScheme.onSurface,
+            ),
           )),
         );
       },
