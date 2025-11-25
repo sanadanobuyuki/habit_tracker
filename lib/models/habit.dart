@@ -49,6 +49,12 @@ class Habit {
     );
   }
 
+  //creatAtをDateTime型に変換 getter
+  DateTime get createdAtDate{
+    final dt=DateTime.fromMillisecondsSinceEpoch(createdAt);
+    return DateTime(dt.year,dt.month,dt.day);
+  }
+
   // HabitオブジェクトをMapに変換
   //
   // 使い方:
