@@ -30,7 +30,7 @@ class EmojiSelector extends StatelessWidget {
       '🛏️',
       '📝',
       '🎨',
-      '🎵',
+      '🪇',
       '💪',
       '🧹',
       '🎮',
