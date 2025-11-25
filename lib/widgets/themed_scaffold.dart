@@ -126,7 +126,6 @@ class ThemedScaffold extends StatelessWidget {
         );
 
       case BackgroundPattern.solid:
-      default:
         // 単色の場合は ThemeData の背景色を使用
         return Container(color: theme.themeData.scaffoldBackgroundColor);
     }

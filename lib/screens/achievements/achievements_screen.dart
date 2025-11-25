@@ -265,9 +265,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       height: 60,
       decoration: BoxDecoration(
         // 解除済みなら色付き、未解除ならグレー
-        color: isUnlocked
-            ? Colors.orange.withOpacity(0.2)
-            : Colors.grey.withOpacity(0.2),
+        color: isUnlocked ? Colors.orange : Colors.grey,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(

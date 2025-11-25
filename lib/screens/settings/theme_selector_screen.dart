@@ -188,7 +188,6 @@ class ThemeSelectorScreen extends StatelessWidget {
         );
 
       case BackgroundPattern.solid:
-      default:
         // 単色の場合は従来のプレビュー（AppBarと背景色）
         return Column(
           children: [
