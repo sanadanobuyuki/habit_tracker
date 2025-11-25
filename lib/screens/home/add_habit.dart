@@ -175,7 +175,6 @@ class _AddHabitState extends State<AddHabit> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('習慣を追加'),
@@ -189,7 +188,7 @@ class _AddHabitState extends State<AddHabit> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(colorScheme.onSurface.value),
+                color: Colors.white,
               ),
             ),
           ),
