@@ -54,13 +54,16 @@ class ThemedScaffold extends StatelessWidget {
           Selector<ThemeProvider, AppTheme>(
             selector: (context, themeProvider) => themeProvider.currentTheme,
             shouldRebuild: (previous, next) {
+              // pattern 関連または scaffoldBackgroundColor が変わった時に再構築
               return previous.pattern != next.pattern ||
                   previous.patternColors != next.patternColors ||
                   previous.squareSize != next.squareSize ||
                   previous.dotSize != next.dotSize ||
                   previous.spacing != next.spacing ||
                   previous.stripeWidth != next.stripeWidth ||
-                  previous.isVertical != next.isVertical;
+                  previous.isVertical != next.isVertical ||
+                  previous.themeData.scaffoldBackgroundColor !=
+                      next.themeData.scaffoldBackgroundColor; // ← 追加
             },
             builder: (context, theme, _) {
               return _buildBackground(theme);
@@ -123,6 +126,7 @@ class ThemedScaffold extends StatelessWidget {
         );
 
       case BackgroundPattern.solid:
+      default:
         // 単色の場合は ThemeData の背景色を使用
         return Container(color: theme.themeData.scaffoldBackgroundColor);
     }
