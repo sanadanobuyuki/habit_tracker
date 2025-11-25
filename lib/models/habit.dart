@@ -51,6 +51,7 @@ class Habit {
 
   //creatAtをDateTime型に変換 getter
   DateTime get createdAtDate{
+    //ミリ秒からDateTimeで日付変換している
     final dt=DateTime.fromMillisecondsSinceEpoch(createdAt);
     return DateTime(dt.year,dt.month,dt.day);
   }
