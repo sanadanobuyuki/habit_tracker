@@ -32,7 +32,7 @@ class ThemedScaffold extends StatelessWidget {
   final Widget? endDrawer;
 
   const ThemedScaffold({
-    Key? key,
+    super.key,
     this.appBar,
     required this.body,
     this.floatingActionButton,
@@ -40,7 +40,7 @@ class ThemedScaffold extends StatelessWidget {
     this.floatingActionButtonLocation,
     this.drawer,
     this.endDrawer,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +126,6 @@ class ThemedScaffold extends StatelessWidget {
         );
 
       case BackgroundPattern.solid:
-      default:
         // 単色の場合は ThemeData の背景色を使用
         return Container(color: theme.themeData.scaffoldBackgroundColor);
     }

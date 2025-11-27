@@ -28,12 +28,12 @@ class CheckeredBackground extends StatelessWidget {
   final double squareSize;
 
   const CheckeredBackground({
-    Key? key,
+    super.key,
     required this.child,
     this.color1 = Colors.white,
     this.color2 = const Color(0xFFF5F5F5),
     this.squareSize = 20.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,13 +126,13 @@ class DottedBackground extends StatelessWidget {
   final double spacing;
 
   const DottedBackground({
-    Key? key,
+    super.key,
     required this.child,
     this.backgroundColor = Colors.white,
     this.dotColor = const Color(0xFFE0E0E0),
     this.dotSize = 4.0,
     this.spacing = 20.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -215,12 +215,12 @@ class StripedBackground extends StatelessWidget {
   final bool isVertical;
 
   const StripedBackground({
-    Key? key,
+    super.key,
     required this.child,
     required this.colors,
     this.stripeWidth = 20.0,
     this.isVertical = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -310,12 +310,12 @@ class GradientBackground extends StatelessWidget {
   final AlignmentGeometry end;
 
   const GradientBackground({
-    Key? key,
+    super.key,
     required this.child,
     required this.colors,
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
