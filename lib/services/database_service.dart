@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 // ignore: unused_import
@@ -295,9 +296,25 @@ class DatabaseService {
 
     await db.update(
       'habits',
-      {'is_deleted': 1}, //削除フラグを1に設定
+      {
+        'is_deleted': 1,
+      }, //削除フラグを1に設定
       where: 'id = ?',
       whereArgs: [id],
+    );
+  }
+
+  //特定日時点で存在していた習慣を取得
+  Future<List<Map<String,dynamic>>> getHabitsAtDate(String date)async{
+    final db=await database;
+
+    final dateTime=DateTime.parse(date);
+    final timestamp=dateTime.millisecondsSinceEpoch;
+
+    return await db.query(
+      "habits",
+      where: '(is_deleted=0) OR (is_deleted=1 AND deleted_at > ?)',
+      whereArgs: [timestamp],
     );
   }
 
@@ -384,6 +401,37 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  //指定日の達成率を計算
+  //その日に記録が存在する習慣のみを対象とする
+  //(削除された習慣の影響を受けない)
+  Future<double> getCompletionRateForDate(String date)async{
+    final db=await database;
+
+    //その日の記録を取得
+    final records=await db.rawQuery('''
+      SELECT hr.*, h.is_deleted
+      FROM habit_records hr
+      INNER JOIN habits h ON hr.habit_id = h.id
+      WHERE hr.date = ? AND h.is_deleted = 0
+      ''',[date]);
+
+    // final records=await db.query(
+    //   "habit_records",
+    //   where: 'date=?',
+    //   whereArgs: [date],
+    // );
+
+    if(records.isEmpty){
+      return 0.0;
+    }
+
+    //達成した記録の数
+    final completedCount=records.where((r)=>r['completed']==1).length;
+
+    //達成率を計算
+    return completedCount/records.length;
   }
 
   // ===== 実績(achievements)の操作 =====

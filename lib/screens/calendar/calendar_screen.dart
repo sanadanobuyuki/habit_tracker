@@ -67,7 +67,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     //UI更新
-    setState(() {});
+    if(mounted){setState(() {});}
   }
 
   //すべての習慣をデータベースから取得
@@ -136,61 +136,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //習慣の達成率を計算
-  double _getCompletionRate(DateTime date) {
-    //日付を文字列に変換
-    final dateString = _formatDate(date);
-    //その日の記録(_loadMonthRecordで登録した)を取得
-    final records = _recordByDate[dateString];
+  Future<double> _getCompletionRate(DateTime date)async{
+    final dateString=_formatDate(date);
 
-    //記録がなければ0.0%
-    if (records == null || records.isEmpty) {
-      return 0.0;
-    }
+    //データベースから直接達成率を取得
+    return await _db.getCompletionRateForDate(dateString);
+  }
 
-    //条件に合う要素だけを抽出
-    //where(weekday)が条件
-    final targetHabits = _habits.where((habit){
-
-      //カレンダーの日付(date)よりも前じゃなかったら日付を取得
-      final aftarStart=!date.isBefore(habit.createdAtDate);
-
-      //曜日条件(元々のロジック)
-      final weekdayMatch=habit.isTargetDay(date.weekday);
-
-      return aftarStart && weekdayMatch;
-    }).toList();
-
-    //対象習慣がない場合
-    if (targetHabits.isEmpty) {
-      return 0.0;
-    }
-    // final targetHabits = _habits
-    //     .where((habit) => habit.isTargetDay(weekday))
-    //     .toList();
-
-    // //対象習慣がない場合
-    // if (targetHabits.isEmpty) {
-    //   return 0.0;
-    // }
-
-    //達成した習慣をカウント
-    int completedCount = 0;
-    //対象の習慣を一つずつチェック
-    for (var habit in targetHabits) {
-      //firstWhere()は条件に合う最初の要素を探す
-      final record = records.firstWhere(
-        (r) => r['habit_id'] == habit.id,
-        //orElse:見つからなかった場合に返す値
-        orElse: () => <String, dynamic>{},
-      );
-
-      //記録があるかつ達成していると
-      if (record.isNotEmpty && record['completed'] == 1) {
-        completedCount++;
-      }
-    }
-
-    return completedCount / targetHabits.length;
+  //今日の達成率を表示するためにそれを取得（デバッグ用）
+  Future<double> _getTodayCompletionRate() async{
+    final today=DateTime.now();
+    return await _getCompletionRate(today);
   }
 
   void _showSnackBar(String message) {
@@ -326,6 +282,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
               "達成率の凡例",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
+            
+            //今日の達成率を表示するやつ(デバッグ用)
+            //FutureBuilder:非同期処理が完了するまで待ち、その後に特定のウィジェットを構築
+            FutureBuilder<double>(
+              future: _getTodayCompletionRate(),
+              //snapshot:非同期プログラミングやウィジェットの状態の変更を監視する
+              builder: (context,snapshot){
+                //connectionState:非同期操作の状態
+                if(snapshot.connectionState==ConnectionState.waiting){
+                  return const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
+                }
+
+                if(snapshot.hasError){
+                  return const Text(
+                    "エラー",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.red,
+                    ),
+                  );
+                }
+
+                final rate=snapshot.data ?? 0.0;
+                final percentage=(rate*100).toInt();
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getHeatColor(rate),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child:Text(
+                    "今日: $percentage%",
+                    style: TextStyle(
+                      color: rate>0.0
+                        ? Colors.black
+                        : Theme.of(context).colorScheme.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                );
+              }
+            ),
+
             const SizedBox(height: 12),
             _buildLegendItem("未記録", Colors.grey.shade200),
             _buildLegendItem("～20%", Colors.red.shade100),
@@ -399,32 +411,53 @@ class _CalendarScreenState extends State<CalendarScreen> {
         //計算したdayから完全なDateTimeを作成
         final date = DateTime(_currentMonth.year, _currentMonth.month, day);
 
-        //達成率を取得
-        final rate = _getCompletionRate(date);
-        //達成率に応じた色を取得
-        final color = _getHeatColor(rate);
+        return FutureBuilder<double>(
+          future: _getCompletionRate(date),
+          builder: (context,snapshot){
+            //データ読み込み中
+            if(!snapshot.hasData){
+              return Container(
+                margin: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color:Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text("$day"),
+                ),
+              );
+            }
 
-        //テーマに合わせた色選択
-        final colorScheme=Theme.of(context).colorScheme;
+            //達成率を取得
+            final rate = snapshot.data!;
+            //達成率に応じた色を取得
+            final color = _getHeatColor(rate);
 
-        //日付セルを表示
-        return Container(
-          //周りに2ピクセルの余白
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: color, //背景色
-            borderRadius: BorderRadius.circular(8), //角を丸く
-          ),
-          child: Center(child: Text(
-            
-            '$day',
-            //onSurface:背景に合わせた文字色を自動選択
-            style: TextStyle(
-              color: rate>0.0
-                  ? Colors.black
-                  : colorScheme.onSurface,
-            ),
-          )),
+            //テーマに合わせた色選択
+            final colorScheme=Theme.of(context).colorScheme;
+
+            //日付セルを表示
+            return Container(
+              //周りに2ピクセルの余白
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: color, //背景色
+                borderRadius: BorderRadius.circular(8), //角を丸く
+              ),
+              child: Center(
+                child: Text(
+                  '$day',
+
+                  //onSurface:背景に合わせた文字色を自動選択
+                  style: TextStyle(
+                    color: rate>0.0
+                        ? Colors.black
+                        : colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
