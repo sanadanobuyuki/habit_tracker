@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
+import '../../controllers/achievement_controller.dart';
 import '../../widgets/emoji_selector.dart';
 import '../../widgets/color_selector.dart';
 import '../../widgets/day_selector.dart';
-import '../../widgets/frequency_selector.dart';
 
 /// AddHabit
 ///
@@ -22,15 +22,13 @@ class _AddHabitState extends State<AddHabit> {
   final TextEditingController _nameController = TextEditingController();
 
   final DatabaseService _db = DatabaseService();
+  final AchievementController _achievementController = AchievementController();
 
   // 選択された絵文字（初期値なし）
   String _selectedEmoji = '';
 
   // 選択された色（初期値: 赤）
   int _selectedColor = 0xFFFF4444;
-
-  // 目標頻度（初期値: 7回/週）
-  int _targetFrequency = 7;
 
   // 曜日設定の種類
   // true = 毎日, false = 曜日指定
@@ -74,14 +72,41 @@ class _AddHabitState extends State<AddHabit> {
         name: _nameController.text.trim(),
         emoji: _selectedEmoji,
         color: _selectedColor,
-        targetFrequency: _targetFrequency,
         daysOfWeek: daysOfWeek,
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
 
+      print('習慣を保存しました'); // ← 追加
+
+      //実績チェック
+      //習慣を作成した後、habit_count系の実績をチェック
+      //処理の流れ
+      //1.checkHabitContAchievements()を呼ぶ
+      //2.新しく解除された実績のリストが返ってくる
+      //3.リストがからでなければ実績解除の通知を表示
+      final newAchievements = await _achievementController
+          .checkHabitCountAchievements();
+
+      print('解除された実績数: ${newAchievements.length}'); // ← 追加
+
       // 保存成功
       if (mounted) {
         _showSnackBar('習慣を保存しました');
+
+        //新しく解除された実績があれば通知
+        //isNotEmpty
+        //リストがからでない＝新しい実績が解除された
+        if (newAchievements.isNotEmpty) {
+          //複数解除されることもあるが最初の一つだけ通知
+          final achievement = newAchievements.first;
+
+          print('実績: ${achievement.name}'); // ← 追加
+
+          //スナックバーで通知
+          //後でダイアログに変更する
+          _showSnackBar('🎉実績解除！「${achievement.name}」');
+        }
+
         Navigator.of(context).pop(); // 前の画面に戻る
       }
     } catch (e) {
@@ -236,15 +261,6 @@ class _AddHabitState extends State<AddHabit> {
               onDayToggle: _onDayToggle,
             ),
             const SizedBox(height: 24),
-
-            // 目標頻度
-            // FrequencySelector ウィジェットを使用
-            FrequencySelector(
-              targetFrequency: _targetFrequency,
-              onFrequencyChanged: (frequency) {
-                setState(() => _targetFrequency = frequency);
-              },
-            ),
           ],
         ),
       ),

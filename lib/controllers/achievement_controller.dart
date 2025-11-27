@@ -35,7 +35,7 @@ class AchievementController {
       //where()について:リストの要素を条件でフィルタリング
       //条件に一致する要素だけを残す
       final habitCountAchievements = allAchievements
-          .where((data) => data['coundition_type'] == 'habit_count')
+          .where((data) => data['condition_type'] == 'habit_count')
           .map((data) => Achievement.fromMap(data))
           .toList();
 

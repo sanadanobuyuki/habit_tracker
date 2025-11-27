@@ -137,7 +137,7 @@ class HabitCard extends StatelessWidget {
   /// サブタイトル部分
   Widget _buildSubtitle(bool isTargetDay) {
     return Text(
-      isTargetDay ? '目標: 週${habit.targetFrequency}回' : '今日は対象外',
+      isTargetDay ? '目標' : '今日は対象外',
       style: TextStyle(
         fontSize: 14,
         color: isTargetDay ? Colors.grey : Colors.grey.shade400,

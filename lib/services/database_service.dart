@@ -121,7 +121,6 @@ class DatabaseService {
        name TEXT NOT NULL,
        emoji TEXT,
        color INTEGER,
-       target_frequency INTEGER DEFAULT 7,
        days_of_week TEXT,
        created_at INTEGER NOT NULL,
        is_deleted INTEGER DEFAULT 0
@@ -212,7 +211,6 @@ class DatabaseService {
     required String name, //習慣の名前
     required String emoji, //習慣の絵文字
     required int color, //習慣の表示色
-    required int targetFrequency, //目標頻度
     String? daysOfWeek, //曜日指定 (null=毎日)
     required int createdAt, //作成日時
   }) async {
@@ -226,7 +224,6 @@ class DatabaseService {
       'name': name,
       'emoji': emoji,
       'color': color,
-      'target_frequency': targetFrequency,
       'days_of_week': daysOfWeek, // 追加
       'created_at': createdAt,
       'is_deleted': 0, //新規追加時は削除フラグを0に設定

@@ -7,7 +7,6 @@ class Habit {
   final String name; // 習慣名
   final String emoji; // 絵文字
   final int color; // 色コード
-  final int targetFrequency; // 目標頻度
   final String? daysOfWeek; // 曜日指定 (null=毎日, "1,3,5"=月水金)
   final int createdAt; // 作成日時
   final int isDeleted; // 削除フラグ
@@ -22,7 +21,6 @@ class Habit {
     required this.name,
     required this.emoji,
     required this.color,
-    required this.targetFrequency,
     this.daysOfWeek, // 曜日指定(省略可能)
     required this.createdAt,
     this.isDeleted = 0,
@@ -42,7 +40,6 @@ class Habit {
       name: map['name'] as String,
       emoji: map['emoji'] as String,
       color: map['color'] as int,
-      targetFrequency: map['target_frequency'] as int,
       daysOfWeek: map['days_of_week'] as String?, // 追加
       createdAt: map['created_at'] as int,
       isDeleted: map['is_deleted'] as int? ?? 0, // nullなら0
@@ -50,10 +47,10 @@ class Habit {
   }
 
   //creatAtをDateTime型に変換 getter
-  DateTime get createdAtDate{
+  DateTime get createdAtDate {
     //ミリ秒からDateTimeで日付変換している
-    final dt=DateTime.fromMillisecondsSinceEpoch(createdAt);
-    return DateTime(dt.year,dt.month,dt.day);
+    final dt = DateTime.fromMillisecondsSinceEpoch(createdAt);
+    return DateTime(dt.year, dt.month, dt.day);
   }
 
   // HabitオブジェクトをMapに変換
@@ -69,7 +66,6 @@ class Habit {
       'name': name,
       'emoji': emoji,
       'color': color,
-      'target_frequency': targetFrequency,
       'days_of_week': daysOfWeek, // 追加
       'created_at': createdAt,
       'is_deleted': isDeleted,
