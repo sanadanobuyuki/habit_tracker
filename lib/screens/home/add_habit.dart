@@ -4,6 +4,7 @@ import '../../controllers/achievement_controller.dart';
 import '../../widgets/emoji_selector.dart';
 import '../../widgets/color_selector.dart';
 import '../../widgets/day_selector.dart';
+import '../../widgets/themed_scaffold.dart';
 
 /// AddHabit
 ///
@@ -76,8 +77,6 @@ class _AddHabitState extends State<AddHabit> {
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
 
-      print('習慣を保存しました'); // ← 追加
-
       //実績チェック
       //習慣を作成した後、habit_count系の実績をチェック
       //処理の流れ
@@ -86,8 +85,6 @@ class _AddHabitState extends State<AddHabit> {
       //3.リストがからでなければ実績解除の通知を表示
       final newAchievements = await _achievementController
           .checkHabitCountAchievements();
-
-      print('解除された実績数: ${newAchievements.length}'); // ← 追加
 
       // 保存成功
       if (mounted) {
@@ -99,8 +96,6 @@ class _AddHabitState extends State<AddHabit> {
         if (newAchievements.isNotEmpty) {
           //複数解除されることもあるが最初の一つだけ通知
           final achievement = newAchievements.first;
-
-          print('実績: ${achievement.name}'); // ← 追加
 
           //スナックバーで通知
           //後でダイアログに変更する
@@ -200,7 +195,7 @@ class _AddHabitState extends State<AddHabit> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ThemedScaffold(
       appBar: AppBar(
         title: const Text('習慣を追加'),
         // actions について:
