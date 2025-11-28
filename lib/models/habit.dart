@@ -10,6 +10,7 @@ class Habit {
   final String? daysOfWeek; // 曜日指定 (null=毎日, "1,3,5"=月水金)
   final int createdAt; // 作成日時
   final int isDeleted; // 削除フラグ
+  final int? deletedAt;//タイムスタンプを保存
 
   // コンストラクタ
   //
@@ -24,6 +25,7 @@ class Habit {
     this.daysOfWeek, // 曜日指定(省略可能)
     required this.createdAt,
     this.isDeleted = 0,
+    this.deletedAt,
   });
 
   //データベースのMapからHabitオブジェクトを作成
@@ -43,6 +45,7 @@ class Habit {
       daysOfWeek: map['days_of_week'] as String?, // 追加
       createdAt: map['created_at'] as int,
       isDeleted: map['is_deleted'] as int? ?? 0, // nullなら0
+      deletedAt: map['deleted_at'] as int?,
     );
   }
 
@@ -69,6 +72,7 @@ class Habit {
       'days_of_week': daysOfWeek, // 追加
       'created_at': createdAt,
       'is_deleted': isDeleted,
+      'deleted_at':deletedAt,
     };
   }
 

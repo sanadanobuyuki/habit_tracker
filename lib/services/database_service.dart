@@ -58,7 +58,7 @@ class DatabaseService {
     //onUpgrade =バージョンアップ時に実行する関数
     return await openDatabase(
       path,
-      version: 2, // バージョンを2に変更
+      version: 3, // バージョンを2から3に変更
       onCreate: _createTables, //テーブル作成処理を呼び出す
       onUpgrade: _onUpgrade, // アップグレード処理を追加
     );
@@ -83,6 +83,14 @@ class DatabaseService {
       );
       await db.execute(
         'CREATE INDEX idx_habit_records_habit_id ON habit_records(habit_id)',
+      );
+    }
+
+    if(oldVersion < 3){
+      //バージョン2から3へのアップグレード
+      //deleted_at カラムを追加
+      await db.execute(
+        'ALTER TABLE habits ADD COLUMN deleted_at INTEGER'
       );
     }
   }
@@ -124,7 +132,8 @@ class DatabaseService {
        color INTEGER,
        days_of_week TEXT,
        created_at INTEGER NOT NULL,
-       is_deleted INTEGER DEFAULT 0
+       is_deleted INTEGER DEFAULT 0,
+       deleted_at INTEGER
        )
        ''');
   }
@@ -294,8 +303,9 @@ class DatabaseService {
     await db.update(
       'habits',
       {
-        'is_deleted': 1,
-      }, //削除フラグを1に設定
+        'is_deleted': 1,  //削除フラグを1に設定
+        'deleted_at':DateTime.now().millisecondsSinceEpoch,//今の時間を経過ミリ秒で取得
+      }, 
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -406,19 +416,31 @@ class DatabaseService {
   Future<double> getCompletionRateForDate(String date)async{
     final db=await database;
 
+    //日付を[その日の終わり]のタイムスタンプに変換
+    final dateTime=DateTime.parse(date);
+    final startOfDay=DateTime(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      0,0,0,0,//0時0分0秒0ミリ秒のこと
+    ).millisecondsSinceEpoch;//結果としてその日の最初のミリ秒まで取れる
+
+    final endOfDay=DateTime(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      23,59,59,999,//23時59分59秒999ミリ秒
+    ).millisecondsSinceEpoch;//結果としてその日の最後のミリ秒まで取れる
+
     //その日の記録を取得
     final records=await db.rawQuery('''
-      SELECT hr.*, h.is_deleted
+      SELECT hr.*, h.is_deleted,h.created_at,h.deleted_at
       FROM habit_records hr
       INNER JOIN habits h ON hr.habit_id = h.id
-      WHERE hr.date = ? AND h.is_deleted = 0
-      ''',[date]);
-
-    // final records=await db.query(
-    //   "habit_records",
-    //   where: 'date=?',
-    //   whereArgs: [date],
-    // );
+      WHERE hr.date = ?
+        AND h.created_at <= ?
+        AND (h.is_deleted = 0 OR h.deleted_at > ? OR h.deleted_at IS NULL)
+    ''',[date,endOfDay,endOfDay]);
 
     if(records.isEmpty){
       return 0.0;
