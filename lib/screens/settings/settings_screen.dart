@@ -206,6 +206,7 @@ class SettingsScreen extends StatelessWidget {
     if (confirmed != true) return;
 
     // リセット実行
+    // ignore: use_build_context_synchronously
     await _resetDatabase(context);
   }
 
