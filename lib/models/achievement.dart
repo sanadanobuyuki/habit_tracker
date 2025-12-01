@@ -16,8 +16,10 @@ class Achievement {
   ///条件のタイプ
   final int conditionValue;
 
-  ///達成に必要な値
-  final String? rhemeId;
+  final String? rarity;
+
+  //開放するテーマID
+  final String? themeId;
 
   ///報酬テーマID（null可能）
 
@@ -27,7 +29,8 @@ class Achievement {
     required this.description,
     required this.conditionType,
     required this.conditionValue,
-    this.rhemeId,
+    this.rarity,
+    this.themeId,
   });
 
   //データベースのMapからAchievementオブジェクトを作成
@@ -41,7 +44,8 @@ class Achievement {
       description: map['description'] as String,
       conditionType: map['condition_type'] as String,
       conditionValue: map['condition_value'] as int,
-      rhemeId: map['theme_id'] as String?,
+      rarity: map['rarity'] as String?,
+      themeId: map['theme_id'] as String?,
     );
   }
 
@@ -55,7 +59,8 @@ class Achievement {
       'description': description,
       'condition_type': conditionType,
       'condition_value': conditionValue,
-      'theme_id': rhemeId,
+      'rarity': rarity,
+      'theme_id': themeId,
     };
   }
 
@@ -86,11 +91,6 @@ class Achievement {
       default:
         return ''; // その他の実績
     }
-  }
-
-  //テーマ報酬があるか
-  bool get hasThemeReward {
-    return rhemeId != null;
   }
 
   //デバック用の文字列表現

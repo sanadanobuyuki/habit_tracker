@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../services/database_service.dart';
 import '../../models/achievement.dart';
 import '../../models/user_achievement.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/themed_scaffold.dart';
 
 /// AchievementsScreen
 ///
@@ -9,6 +12,7 @@ import '../../models/user_achievement.dart';
 /// - 実績一覧を表示
 /// - 解除済み / 未解除を区別して表示
 /// - 進捗状況を表示
+/// - テーマ報酬を受け取る機能
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
 
@@ -99,9 +103,119 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     }
   }
 
+  // ========== 【追加】ここから ==========
+  /// テーマ報酬を受け取る
+  ///
+  /// 引数:
+  /// - achievement: 報酬を受け取る実績
+  /// - userAchievement: ユーザーの解除記録
+  ///
+  /// 処理の流れ:
+  /// 1. 実績にテーマIDが設定されているか確認
+  /// 2. すでに受け取り済みか確認
+  /// 3. ThemeProviderでテーマをアンロック
+  /// 4. データベースで受け取り済みフラグを更新
+  /// 5. 完了メッセージを表示
+  /// 6. 画面を再読み込み
+  Future<void> _receiveThemeReward(
+    Achievement achievement,
+    UserAchievement userAchievement,
+  ) async {
+    try {
+      // theme_id がない場合は何もしない
+      if (achievement.themeId == null || achievement.themeId!.isEmpty) {
+        _showSnackBar('この実績には報酬がありません');
+        return;
+      }
+
+      // すでに受け取り済みか確認
+      if (userAchievement.themeReceived) {
+        _showSnackBar('この報酬はすでに受け取り済みです');
+        return;
+      }
+
+      // ThemeProvider を取得
+      // listen: false について:
+      // - この処理では画面の更新を監視する必要がないため false
+      // - テーマの状態を変更するだけで、変更を監視はしない
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+      // テーマをアンロック
+      await themeProvider.unlockTheme(achievement.themeId!);
+
+      // データベースで受け取り済みフラグを更新
+      final db = DatabaseService();
+      final updated = userAchievement.copyWith(themeReceived: true);
+      await db.updateUserAchievement(updated);
+
+      // 画面を再読み込み
+      await _loadAchievements();
+
+      // 成功メッセージを表示
+      if (mounted) {
+        _showDialog(
+          title: '🎉 テーマを受け取りました!',
+          content:
+              'テーマ「${_getThemeName(achievement.themeId!)}」が使えるようになりました。\n設定画面から選択できます。',
+        );
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('テーマ受け取りエラー: $e');
+      _showSnackBar('エラーが発生しました: $e');
+    }
+  }
+
+  /// テーマIDから名前を取得
+  ///
+  /// 引数:
+  /// - themeId: テーマID
+  ///
+  /// 戻り値:
+  /// - テーマ名（見つからない場合は themeId をそのまま返す）
+  String _getThemeName(String themeId) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final theme = themeProvider.themes.firstWhere(
+      (t) => t.id == themeId,
+      orElse: () => themeProvider.themes[0],
+    );
+    return theme.name;
+  }
+
+  /// スナックバーを表示
+  ///
+  /// 引数:
+  /// - message: 表示するメッセージ
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  /// ダイアログを表示
+  ///
+  /// 引数:
+  /// - title: ダイアログのタイトル
+  /// - content: ダイアログの本文
+  void _showDialog({required String title, required String content}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ThemedScaffold(
       appBar: AppBar(title: const Text('実績')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -231,6 +345,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     bool isUnlocked,
     UserAchievement? userAchievement,
   ) {
+    // テーマ報酬があるか
+    final hasThemeReward =
+        achievement.themeId != null && achievement.themeId!.isNotEmpty;
+    // ========== 【追加】ここまで ==========
+
     return Card(
       // elevation について:
       // - カードの影の深さ
@@ -238,17 +357,81 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       elevation: isUnlocked ? 3 : 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          // 【変更】Row → Column に変更して、報酬ボタンを下に配置
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 左側: 絵文字 or ？マーク
-            _buildIcon(achievement, isUnlocked),
+            // 上部: アイコンと情報
+            Row(
+              children: [
+                // 左側: 絵文字 or ？マーク
+                _buildIcon(achievement, isUnlocked),
 
-            const SizedBox(width: 16),
+                const SizedBox(width: 16),
 
-            // 右側: 実績情報
-            Expanded(
-              child: _buildInfo(achievement, isUnlocked, userAchievement),
+                // 右側: 実績情報
+                Expanded(
+                  child: _buildInfo(achievement, isUnlocked, userAchievement),
+                ),
+              ],
             ),
+
+            // ========== 【追加】ここから ==========
+            // テーマ報酬がある場合
+            if (isUnlocked && hasThemeReward && userAchievement != null) ...[
+              const SizedBox(height: 12),
+              const Divider(), // 区切り線
+              const SizedBox(height: 8),
+
+              // 報酬情報
+              Row(
+                children: [
+                  const Icon(Icons.palette, color: Colors.purple, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '報酬: テーマ「${_getThemeName(achievement.themeId!)}」',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // 受け取りボタン
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  // onPressed について:
+                  // - ボタンが押された時の処理
+                  // - null を設定するとボタンが無効化される（グレーアウト）
+                  onPressed: userAchievement.themeReceived
+                      ? null // すでに受け取り済みなら無効化
+                      : () => _receiveThemeReward(achievement, userAchievement),
+                  icon: Icon(
+                    userAchievement.themeReceived
+                        ? Icons.check
+                        : Icons.card_giftcard,
+                  ),
+                  label: Text(
+                    userAchievement.themeReceived ? '受け取り済み' : '報酬を受け取る',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: userAchievement.themeReceived
+                        ? null
+                        : Colors.purple,
+                    foregroundColor: userAchievement.themeReceived
+                        ? null
+                        : Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -315,7 +498,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           // 解除日時
           Row(
             children: [
-              Icon(Icons.check_circle, size: 16, color: Colors.green),
+              const Icon(Icons.check_circle, size: 16, color: Colors.green),
               const SizedBox(width: 4),
               Text(
                 userAchievement.formattedDate,

@@ -10,7 +10,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'habit_count',
     'condition_value': 1,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'dark',
   },
   {
     'id': 'ach_habit_5',
