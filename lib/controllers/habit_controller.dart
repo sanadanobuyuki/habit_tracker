@@ -2,14 +2,18 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../models/habit.dart';
+import '../controllers/achievement_controller.dart'; // 【追加】
 
 /// HabitController
 ///
 /// 役割:
 /// - 習慣データの読み込み、更新、削除などのビジネスロジックを管理
 /// - UIから独立したロジックを提供
+/// - 習慣達成時に実績チェックを実行 【追加】
 class HabitController {
   final DatabaseService _db = DatabaseService();
+  final AchievementController _achievementController =
+      AchievementController(); // 【追加】
 
   /// 習慣を読み込む
   ///
@@ -47,19 +51,28 @@ class HabitController {
     return (habits: habits, todayRecords: todayRecords);
   }
 
-  /// 習慣の達成状態を切り替える
+  /// 習慣の達成状態を切り替える【実績チェック追加版】
   ///
   /// 処理の流れ:
   /// 1. 現在の達成状態を確認
   /// 2. 達成/未達成を反転
   /// 3. データベースに保存または更新
-  /// 4. 画面を更新
+  /// 4. 【追加】達成した場合は実績をチェック
+  /// 5. 画面を更新
   ///
   /// 戻り値:
   /// - success: 成功したかどうか
   /// - newCompleted: 新しい達成状態 (0 or 1)
   /// - message: 表示するメッセージ
-  Future<({bool success, int newCompleted, String message})>
+  /// - unlockedAchievements: 新しく解除された実績のリスト 【追加】
+  Future<
+    ({
+      bool success,
+      int newCompleted,
+      String message,
+      List<dynamic> unlockedAchievements,
+    })
+  >
   toggleHabitCompletion(Habit habit, int currentCompleted) async {
     final today = _getTodayString();
 
@@ -94,18 +107,55 @@ class HabitController {
         );
       }
 
+      // ========== 【追加】実績チェック ==========
+      final unlockedAchievements = <dynamic>[];
+
+      if (newCompleted == 1) {
+        // 達成した場合のみ実績をチェック
+        try {
+          // ignore: avoid_print
+          print('🔍 実績チェック開始...');
+
+          // total_days系の実績をチェック
+          final totalDaysAchievements = await _achievementController
+              .checkTotalDaysAchievements();
+          unlockedAchievements.addAll(totalDaysAchievements);
+
+          // streak系の実績をチェック
+          final streakAchievements = await _achievementController
+              .checkStreakAchievements();
+          unlockedAchievements.addAll(streakAchievements);
+
+          if (unlockedAchievements.isNotEmpty) {
+            // ignore: avoid_print
+            print('🎉 ${unlockedAchievements.length}個の実績を解除しました！');
+          }
+        } catch (e) {
+          // ignore: avoid_print
+          print('実績チェックエラー: $e');
+          // 実績チェックのエラーは習慣の達成には影響しない
+        }
+      }
+      // ========================================
+
       // スナックバーで通知
       final message = newCompleted == 1
           ? '${habit.emoji} ${habit.name} を達成しました!'
           : '${habit.name} の達成を取り消しました';
 
-      return (success: true, newCompleted: newCompleted, message: message);
+      return (
+        success: true,
+        newCompleted: newCompleted,
+        message: message,
+        unlockedAchievements: unlockedAchievements,
+      );
     } catch (e) {
       // エラー処理
       return (
         success: false,
         newCompleted: currentCompleted,
         message: 'エラーが発生しました: $e',
+        unlockedAchievements: <dynamic>[],
       );
     }
   }
