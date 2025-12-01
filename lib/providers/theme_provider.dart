@@ -49,6 +49,7 @@ class ThemeProvider extends ChangeNotifier {
   // - 重複を気にせず add() できる
   Set<String> _unlockedThemes = {
     'light', // デフォルトテーマ（最初から使える）
+    'pink',
     //'dark', // デフォルトテーマ（最初から使える）
   };
   // ========== 【追加】ここまで ==========
@@ -89,7 +90,6 @@ class ThemeProvider extends ChangeNotifier {
   //    - パターン背景の上に配置する場合: withOpacity(0.8～0.95) で半透明にすると見やすい
   //    - 単色背景の場合: 通常の色でOK
   //
-  // ========== 【追加】ここから ==========
   // 6. isDefault の設定:
   //    - true: デフォルトテーマ（最初から使える）
   //    - false: 実績で開放するテーマ
@@ -97,7 +97,6 @@ class ThemeProvider extends ChangeNotifier {
   // 7. unlockAchievementId の設定:
   //    - null: デフォルトテーマ
   //    - 'ach_xxx': このテーマを開放するために必要な実績のID
-  // ========== 【追加】ここまで ==========
   final List<AppTheme> _themes = [
     // ========== デフォルトテーマ（最初から使える） ==========
     AppTheme(
@@ -382,7 +381,7 @@ class ThemeProvider extends ChangeNotifier {
     return _unlockedThemes.contains(themeId);
   }
 
-  /// テーマをアンロックする【重要!】
+  /// テーマをアンロックする
   ///
   /// 引数:
   /// - themeId: アンロックするテーマのID
@@ -434,7 +433,6 @@ class ThemeProvider extends ChangeNotifier {
     // - これにより、テーマ選択画面のロック表示が即座に更新される
     notifyListeners();
   }
-  // ========== 【追加】ここまで ==========
 
   /// データベースからテーマ設定を読み込む
   ///
@@ -467,7 +465,6 @@ class ThemeProvider extends ChangeNotifier {
         // ignore: avoid_print
         print('初回起動: デフォルトテーマのみ');
       }
-      // ========== 【追加】ここまで ==========
 
       notifyListeners(); // リスナーに通知
     } catch (e) {
@@ -556,10 +553,8 @@ class AppTheme {
     this.spacing,
     this.stripeWidth,
     this.isVertical,
-    // ========== 【追加】ここから ==========
     this.isDefault = false, // デフォルトは false（実績で開放）
     this.unlockAchievementId, // デフォルトは null
-    // ========== 【追加】ここまで ==========
   });
 
   of(BuildContext context) {}
