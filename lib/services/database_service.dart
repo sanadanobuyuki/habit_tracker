@@ -85,12 +85,10 @@ class DatabaseService {
       );
     }
 
-    if(oldVersion < 3){
+    if (oldVersion < 3) {
       //バージョン2から3へのアップグレード
       //deleted_at カラムを追加
-      await db.execute(
-        'ALTER TABLE habits ADD COLUMN deleted_at INTEGER'
-      );
+      await db.execute('ALTER TABLE habits ADD COLUMN deleted_at INTEGER');
     }
   }
 
@@ -302,20 +300,20 @@ class DatabaseService {
     await db.update(
       'habits',
       {
-        'is_deleted': 1,  //削除フラグを1に設定
-        'deleted_at':DateTime.now().millisecondsSinceEpoch,//今の時間を経過ミリ秒で取得
-      }, 
+        'is_deleted': 1, //削除フラグを1に設定
+        'deleted_at': DateTime.now().millisecondsSinceEpoch, //今の時間を経過ミリ秒で取得
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
   //特定日時点で存在していた習慣を取得
-  Future<List<Map<String,dynamic>>> getHabitsAtDate(String date)async{
-    final db=await database;
+  Future<List<Map<String, dynamic>>> getHabitsAtDate(String date) async {
+    final db = await database;
 
-    final dateTime=DateTime.parse(date);
-    final timestamp=dateTime.millisecondsSinceEpoch;
+    final dateTime = DateTime.parse(date);
+    final timestamp = dateTime.millisecondsSinceEpoch;
 
     return await db.query(
       "habits",
@@ -412,8 +410,8 @@ class DatabaseService {
   //指定日の達成率を計算
   //その日に記録が存在する習慣のみを対象とする
   //(削除された習慣の影響を受けない)
-  Future<double> getCompletionRateForDate(String date)async{
-    final db=await database;
+  Future<double> getCompletionRateForDate(String date) async {
+    final db = await database;
 
     //日付をDateTimeに変換
     final dateTime=DateTime.parse(date);
@@ -440,7 +438,9 @@ class DatabaseService {
       WHERE hr.date = ?
         AND h.created_at <= ?
         AND (h.is_deleted = 0 OR h.deleted_at > ? OR h.deleted_at IS NULL)
-    ''',[date,endOfDay,endOfDay]);
+    ''',
+      [date, endOfDay, endOfDay],
+    );
 
     if(results.isEmpty){
       return 0.0;

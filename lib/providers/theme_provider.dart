@@ -15,6 +15,7 @@ enum BackgroundPattern {
 /// 役割:
 /// - アプリ全体のテーマを管理
 /// - テーマの切り替えと保存
+/// - テーマのロック/アンロック状態を管理 【追加】
 /// - ChangeNotifier を継承して、テーマ変更を他のウィジェットに通知
 ///
 /// ChangeNotifier について:
@@ -34,6 +35,24 @@ class ThemeProvider extends ChangeNotifier {
 
   // 現在のテーマID
   String _currentThemeId = 'light';
+
+  // ========== 【追加】ここから ==========
+  // アンロック済みのテーマIDを保存するセット
+  //
+  // Set について:
+  // - リストと似ているが、重複を許さない
+  // - 例: {'light', 'dark', 'blue'}
+  // - 同じIDを2回追加しても1つしか入らない
+  //
+  // なぜ Set を使う？:
+  // - contains() で高速に存在チェックができる
+  // - 重複を気にせず add() できる
+  Set<String> _unlockedThemes = {
+    'light', // デフォルトテーマ（最初から使える）
+    'pink',
+    //'dark', // デフォルトテーマ（最初から使える）
+  };
+  // ========== 【追加】ここまで ==========
 
   // 利用可能なテーマのリスト
   //
@@ -70,12 +89,22 @@ class ThemeProvider extends ChangeNotifier {
   // 5. cardColor の設定:
   //    - パターン背景の上に配置する場合: withOpacity(0.8～0.95) で半透明にすると見やすい
   //    - 単色背景の場合: 通常の色でOK
+  //
+  // 6. isDefault の設定:
+  //    - true: デフォルトテーマ（最初から使える）
+  //    - false: 実績で開放するテーマ
+  //
+  // 7. unlockAchievementId の設定:
+  //    - null: デフォルトテーマ
+  //    - 'ach_xxx': このテーマを開放するために必要な実績のID
   final List<AppTheme> _themes = [
+    // ========== デフォルトテーマ（最初から使える） ==========
     AppTheme(
       id: 'light',
       name: 'ライト',
       description: '明るいテーマ',
       pattern: BackgroundPattern.solid,
+      isDefault: true, // 【追加】
       themeData: ThemeData(
         //brightness について
         //Brightness.light: 明るいテーマ
@@ -114,6 +143,7 @@ class ThemeProvider extends ChangeNotifier {
       name: 'ダーク',
       description: '暗いテーマ',
       pattern: BackgroundPattern.solid,
+      isDefault: true, // 【追加】
       themeData: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.purple,
@@ -126,11 +156,14 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
     ),
+
+    // ========== 実績で開放されるテーマ ==========
     AppTheme(
       id: 'blue',
       name: 'ブルー',
       description: '青基調のテーマ',
       pattern: BackgroundPattern.solid,
+      isDefault: false, // 【追加】実績で開放
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.blue,
@@ -148,6 +181,7 @@ class ThemeProvider extends ChangeNotifier {
       name: 'グリーン',
       description: '緑基調のテーマ',
       pattern: BackgroundPattern.solid,
+      isDefault: false, // 【追加】実績で開放
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.green,
@@ -165,6 +199,7 @@ class ThemeProvider extends ChangeNotifier {
       name: 'ピンク',
       description: 'ピンク基調のテーマ',
       pattern: BackgroundPattern.solid,
+      isDefault: false, // 【追加】実績で開放
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.pink,
@@ -177,7 +212,8 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
     ),
-    // パターンテーマの追加例
+
+    // ========== パターンテーマ（実績報酬） ==========
     AppTheme(
       id: 'checkered_blue',
       name: 'ブルーチェック',
@@ -185,6 +221,8 @@ class ThemeProvider extends ChangeNotifier {
       pattern: BackgroundPattern.checkered,
       patternColors: [Colors.white, const Color(0xFFE3F2FD)],
       squareSize: 30.0,
+      isDefault: false, // 【追加】実績で開放
+      unlockAchievementId: 'ach_first_habit', // 【追加】開放に必要な実績
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.blue,
@@ -206,6 +244,8 @@ class ThemeProvider extends ChangeNotifier {
       patternColors: [Colors.white, Colors.pink.shade100],
       dotSize: 6.0,
       spacing: 25.0,
+      isDefault: false, // 【追加】実績で開放
+      unlockAchievementId: 'ach_habit_5', // 【追加】開放に必要な実績
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.pink,
@@ -231,6 +271,8 @@ class ThemeProvider extends ChangeNotifier {
       ],
       stripeWidth: 40.0,
       isVertical: false,
+      isDefault: false, // 【追加】実績で開放
+      unlockAchievementId: 'ach_total_7', // 【追加】開放に必要な実績
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.green,
@@ -254,6 +296,8 @@ class ThemeProvider extends ChangeNotifier {
         const Color(0xFFFFE66D),
         const Color(0xFF4ECDC4),
       ],
+      isDefault: false, // 【追加】実績で開放
+      unlockAchievementId: 'ach_habit_10', // 【追加】開放に必要な実績
       themeData: ThemeData(
         brightness: Brightness.light,
         primarySwatch: Colors.orange,
@@ -274,6 +318,8 @@ class ThemeProvider extends ChangeNotifier {
       pattern: BackgroundPattern.checkered,
       patternColors: [const Color(0xFF121212), const Color(0xFF1E1E1E)],
       squareSize: 40.0,
+      isDefault: false, // 【追加】実績で開放
+      unlockAchievementId: 'ach_total_30', // 【追加】開放に必要な実績
       themeData: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.purple,
@@ -308,16 +354,119 @@ class ThemeProvider extends ChangeNotifier {
   /// すべてのテーマを取得
   List<AppTheme> get themes => _themes;
 
+  // ========== 【追加】ここから ==========
+  /// アンロック済みのテーマIDセットを取得
+  Set<String> get unlockedThemes => _unlockedThemes;
+
+  /// テーマがアンロック済みかチェック
+  ///
+  /// 引数:
+  /// - themeId: チェックするテーマのID
+  ///
+  /// 戻り値:
+  /// - true: アンロック済み（使用可能）
+  /// - false: ロック中（使用不可）
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// if (themeProvider.isThemeUnlocked('checkered_blue')) {
+  ///   print('ブルーチェックは使えます');
+  /// }
+  /// ```
+  bool isThemeUnlocked(String themeId) {
+    // contains() について:
+    // - セットに指定した要素が含まれているかチェック
+    // - 例: {'light', 'dark'}.contains('light') → true
+    // - 例: {'light', 'dark'}.contains('blue') → false
+    return _unlockedThemes.contains(themeId);
+  }
+
+  /// テーマをアンロックする
+  ///
+  /// 引数:
+  /// - themeId: アンロックするテーマのID
+  ///
+  /// 処理の流れ:
+  /// 1. すでにアンロック済みならスキップ
+  /// 2. _unlockedThemes セットに追加
+  /// 3. データベースに保存
+  /// 4. notifyListeners() で画面を更新
+  ///
+  /// 使い方の例:
+  /// ```dart
+  /// // 実績画面で報酬を受け取る時に呼ぶ
+  /// await themeProvider.unlockTheme('checkered_blue');
+  /// ```
+  Future<void> unlockTheme(String themeId) async {
+    // すでにアンロック済みなら何もしない
+    if (_unlockedThemes.contains(themeId)) {
+      // ignore: avoid_print
+      print('テーマ $themeId はすでにアンロック済み');
+      return;
+    }
+
+    // アンロック済みセットに追加
+    // add() について:
+    // - セットに要素を追加する
+    // - 既に存在する要素を追加しようとしても、重複は作られない（Set の特性）
+    _unlockedThemes.add(themeId);
+
+    // ignore: avoid_print
+    print('テーマ $themeId をアンロック!');
+
+    // データベースに保存
+    try {
+      // Set を文字列に変換して保存
+      // join(',') について:
+      // - セットやリストの要素を指定した文字で結合
+      // - 例: {'light', 'dark', 'blue'}.join(',') → "light,dark,blue"
+      await _db.saveSetting('unlocked_themes', _unlockedThemes.join(','));
+    } catch (e) {
+      // ignore: avoid_print
+      print('テーマアンロック保存エラー: $e');
+    }
+
+    // 画面を更新
+    // notifyListeners() について:
+    // - このProviderを監視しているすべてのウィジェットに「変更があったよ!」と通知
+    // - 通知を受け取ったウィジェットは自動的に再描画される
+    // - これにより、テーマ選択画面のロック表示が即座に更新される
+    notifyListeners();
+  }
+
   /// データベースからテーマ設定を読み込む
   ///
   /// アプリ起動時に呼び出す
   Future<void> loadTheme() async {
     try {
+      // 現在のテーマIDを読み込み
       final themeId = await _db.getSetting('current_theme_id');
       if (themeId != null) {
         _currentThemeId = themeId;
-        notifyListeners(); // リスナーに通知
       }
+
+      // アンロック済みテーマの読み込み
+      final unlockedThemesStr = await _db.getSetting('unlocked_themes');
+      if (unlockedThemesStr != null && unlockedThemesStr.isNotEmpty) {
+        // 文字列をセットに変換
+        // split(',') について:
+        // - 文字列を指定した文字で分割してリストにする
+        // - 例: "light,dark,blue".split(',') → ['light', 'dark', 'blue']
+        //
+        // toSet() について:
+        // - リストをセットに変換
+        // - 例: ['light', 'dark'].toSet() → {'light', 'dark'}
+        _unlockedThemes = unlockedThemesStr.split(',').toSet();
+
+        // ignore: avoid_print
+        print('アンロック済みテーマを読み込み: $_unlockedThemes');
+      } else {
+        // データベースに保存されていない場合はデフォルト値を使う
+        // ignore: avoid_print
+        print('初回起動: デフォルトテーマのみ');
+      }
+
+      notifyListeners(); // リスナーに通知
     } catch (e) {
       // エラーの場合はデフォルトテーマを使用
       // ignore: avoid_print
@@ -341,6 +490,12 @@ class ThemeProvider extends ChangeNotifier {
       return;
     }
 
+    // 【追加】テーマがアンロック済みか確認
+    if (!isThemeUnlocked(themeId)) {
+      // ignore: avoid_print
+      print('テーマ $themeId はロックされています');
+      return;
+    }
     _currentThemeId = themeId;
 
     // データベースに保存
@@ -382,6 +537,10 @@ class AppTheme {
   final double? stripeWidth;
   final bool? isVertical;
 
+  // アンロック関連のプロパティ
+  final bool isDefault; // デフォルトテーマかどうか（true=最初から使える）
+  final String? unlockAchievementId; // 開放に必要な実績ID
+
   AppTheme({
     required this.id,
     required this.name,
@@ -394,6 +553,8 @@ class AppTheme {
     this.spacing,
     this.stripeWidth,
     this.isVertical,
+    this.isDefault = false, // デフォルトは false（実績で開放）
+    this.unlockAchievementId, // デフォルトは null
   });
 
   of(BuildContext context) {}

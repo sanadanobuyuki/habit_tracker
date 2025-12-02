@@ -55,7 +55,7 @@ class UserAchievement {
     required this.id,
     required this.achievementId,
     required this.unlockedAt,
-    required this.themeReceived,
+    this.themeReceived = false,
   });
 
   /// データベースの Map から UserAchievement オブジェクトを作成
