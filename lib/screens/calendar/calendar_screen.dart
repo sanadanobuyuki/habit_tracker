@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
-import '../../models/habit.dart';
 
 //画面上でどれだけ見えているかを検出するパッケージ
 import 'package:visibility_detector/visibility_detector.dart';
@@ -13,21 +12,17 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  //ロード処理を起こすフラグ
-  bool _isLoading = true;
 
   final DatabaseService _db = DatabaseService();
-
-  //取得した習慣を入れるリスト(Habit型限定)
-  List<Habit> _habits = [];
-
-  //日付ごとの記録を保存する変数
-  final Map<String, List<Map<String, dynamic>>> _recordByDate = {};
 
   //現在の年月
   DateTime _currentMonth = DateTime.now();
 
+  //画面が初回読み込み済みかどうか
   bool _hasLoadedOnce = false;
+
+  //再描画を強制するためのキー
+  int _rebuildKey=0;
 
   @override
   void initState() {
@@ -37,85 +32,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //====================================データ読み込みたち=================================
 
+  //初回データ読み込み
   Future<void> _loadInitial() async {
-    await _loadData();
     await _loadMonthRecord();
-    setState(() {
-      _hasLoadedOnce = true;
-    });
+    if(mounted){
+      setState(() => _hasLoadedOnce = true);
+    }
   }
 
   //月の記録を読み込む機能
+
+  //表示中の月の全日付をループ
+  //各日付の達成率を計算(データベース側で実行)
+  //_rebuildKeyを更新してFutureBuilderに再計算を促す
   Future<void> _loadMonthRecord() async {
-    //既存のデータをクリア
-    _recordByDate.clear();
-
-    //月の最終日を取得
-    final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
-
-    //1日から最終日までの繰り返し
-    for (int day = 1; day <= lastDay.day; day++) {
-      final date = DateTime(_currentMonth.year, _currentMonth.month, day);
-      final dateString = _formatDate(date);
-
-      //その日の記録を取得
-      final records = await _db.getRecordsByDate(dateString);
-      //レコードが空じゃなかったら登録
-      if (records.isNotEmpty) {
-        _recordByDate[dateString] = records;
-      }
-    }
-
-    //UI更新
-    if(mounted){setState(() {});}
-  }
-
-  //すべての習慣をデータベースから取得
-  Future<void> _loadData() async {
-    //時間がかかるからロード処理
-    setState(() => _isLoading = true);
-
-    //エラーが起きてもアプリがクラッシュしないようにする
-    try {
-      //すべての習慣を取得
-      final habitsData = await _db.getAllHabits();
-
-      //mapをHabitに変換
-      _habits = habitsData.map((data) => Habit.fromMap(data)).toList();
-
-      //ロード処理がおわっていたら画面更新
-      setState(() => _isLoading = false);
-    } catch (e) {
-      //エラー処理
-      _showSnackBar('エラーが発生しました:$e');
-      setState(() => _isLoading = false);
+    //_rebuildKeyをインクリメントして、すべてのFutureBuilderを再実行
+    if(mounted){
+      setState(() => _rebuildKey++);
     }
   }
 
   //=========================================月切り替え================================
   //前の月に切り替え
   void _previousMonth() {
-    setState(() {
-      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
-    });
+    if(!mounted) return;
+      setState(() {
+        _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+      });
+
     //記録を再読み込み
     _loadMonthRecord();
   }
 
   //次の月に切り替え
   void _nextMonth() {
-    setState(() {
-      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
-    });
+    if(!mounted) return;
+      setState(() {
+        _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+      });
+    
     //記録を再読み込み
     _loadMonthRecord();
   }
 
   //今月に戻る
   void _goToToday() {
-    setState(() {
-      _currentMonth = DateTime.now();
-    });
+    if(!mounted) return;
+      setState(() {
+        _currentMonth = DateTime.now();
+      });
+    
     //記録を再読み込み
     _loadMonthRecord();
   }
@@ -135,7 +101,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Colors.green.shade500;
   }
 
-  //習慣の達成率を計算
+  //指定日の達成率を取得
   Future<double> _getCompletionRate(DateTime date)async{
     final dateString=_formatDate(date);
 
@@ -143,21 +109,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return await _db.getCompletionRateForDate(dateString);
   }
 
-  //今日の達成率を表示するためにそれを取得（デバッグ用）
+  //今日の達成率を取得（デバッグ用）
   Future<double> _getTodayCompletionRate() async{
-    final today=DateTime.now();
-    return await _getCompletionRate(today);
+    return await _getCompletionRate(DateTime.now());
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
-  }
-
-  //日付や月を二桁表示に合わせる
+  //日付をYYYY-MM-DD形式に変換
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return '${date.year}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
   }
 
   //============================================================================================================
@@ -169,15 +130,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
       key: const Key('calendar-screen'),
       onVisibilityChanged: (info) {
         //画面が表示されたとき(50%以上見えていたら)パッケージのやつ
-        if (info.visibleFraction > 0.5 && _hasLoadedOnce) {
+        if (info.visibleFraction > 0.5 && _hasLoadedOnce && mounted) {
           //print("カレンダーが表示されました-データ再読み込み");
-          _loadData();
+          _loadMonthRecord();
         }
       },
-      child: Scaffold(appBar: _buildAppBar(), body: _buildBody()),
+      child: Scaffold(
+        appBar: _buildAppBar(),
+        body: _buildBody()
+      ),
     );
   }
 
+  //AppBarを構築
   AppBar _buildAppBar() {
     return AppBar(
       title: const Text("カレンダー"),
@@ -192,13 +157,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  //Bodyを構築
   Widget _buildBody() {
-    //ロード中なら
-    if (_isLoading) {
-      //ぐるぐるさせる
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -231,18 +191,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
         IconButton(
           onPressed: _previousMonth,
           icon: const Icon(Icons.chevron_left),
+          tooltip: "前月",
         ),
 
         //年月表示
         Text(
           '${_currentMonth.year}年${_currentMonth.month}月',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold
+          ),
         ),
 
         //次月ボタン
         IconButton(
           onPressed: _nextMonth,
           icon: const Icon(Icons.chevron_right),
+          tooltip: "次月",
         ),
       ],
     );
@@ -260,114 +225,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Text("金", style: TextStyle(fontWeight: FontWeight.bold)),
         Text(
           "土",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue
+          ),
         ),
         Text(
           "日",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.red
+          ),
         ),
       ],
-    );
-  }
-
-  //凡例
-  Widget _buildLegend() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "達成率の凡例",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            
-            //今日の達成率を表示するやつ(デバッグ用)
-            //FutureBuilder:非同期処理が完了するまで待ち、その後に特定のウィジェットを構築
-            FutureBuilder<double>(
-              future: _getTodayCompletionRate(),
-              //snapshot:非同期プログラミングやウィジェットの状態の変更を監視する
-              builder: (context,snapshot){
-                //connectionState:非同期操作の状態
-                if(snapshot.connectionState==ConnectionState.waiting){
-                  return const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  );
-                }
-
-                if(snapshot.hasError){
-                  return const Text(
-                    "エラー",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.red,
-                    ),
-                  );
-                }
-
-                final rate=snapshot.data ?? 0.0;
-                final percentage=(rate*100).toInt();
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getHeatColor(rate),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      width: 1,
-                    ),
-                  ),
-                  child:Text(
-                    "今日: $percentage%",
-                    style: TextStyle(
-                      color: rate>0.0
-                        ? Colors.black
-                        : Theme.of(context).colorScheme.onSurface,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                );
-              }
-            ),
-
-            const SizedBox(height: 12),
-            _buildLegendItem("未記録", Colors.grey.shade200),
-            _buildLegendItem("～20%", Colors.red.shade100),
-            _buildLegendItem("21～40%", Colors.orange.shade200),
-            _buildLegendItem("41～60%", Colors.yellow.shade400),
-            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-            _buildLegendItem("81～100%", Colors.green.shade500),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      ),
     );
   }
 
@@ -411,55 +281,159 @@ class _CalendarScreenState extends State<CalendarScreen> {
         //計算したdayから完全なDateTimeを作成
         final date = DateTime(_currentMonth.year, _currentMonth.month, day);
 
-        return FutureBuilder<double>(
-          future: _getCompletionRate(date),
-          builder: (context,snapshot){
-            //データ読み込み中
-            if(!snapshot.hasData){
-              return Container(
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color:Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text("$day"),
-                ),
-              );
-            }
+        return _buildDateCell(date,day);
+      },
+    );
+  }
 
-            //達成率を取得
-            final rate = snapshot.data!;
-            //達成率に応じた色を取得
-            final color = _getHeatColor(rate);
+  //日付セルを構築
+  Widget _buildDateCell(DateTime date,int day){
+    return FutureBuilder<double>(
+      key: ValueKey('$_rebuildKey-${_formatDate(date)}'),
+      future: _getCompletionRate(date),
+      builder: (context,snapshot){
+        //データ読み込み中
+        if(!snapshot.hasData){
+          return Container(
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(child: Text('$day')),
+          );
+        }
 
-            //テーマに合わせた色選択
-            final colorScheme=Theme.of(context).colorScheme;
+        final rate=snapshot.data!;
+        final color=_getHeatColor(rate);
+        final scheme=Theme.of(context).colorScheme;
 
-            //日付セルを表示
-            return Container(
-              //周りに2ピクセルの余白
-              margin: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: color, //背景色
-                borderRadius: BorderRadius.circular(8), //角を丸く
+        return Container(
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              '$day',
+              style: TextStyle(
+                color: rate > 0.0 ? Colors.black : scheme.onSurface,
               ),
-              child: Center(
-                child: Text(
-                  '$day',
+            ),
+          ),
+        );
+      }
+    );
+  }
 
-                  //onSurface:背景に合わせた文字色を自動選択
-                  style: TextStyle(
-                    color: rate>0.0
-                        ? Colors.black
-                        : colorScheme.onSurface,
-                  ),
-                ),
+  //凡例
+  Widget _buildLegend() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "達成率の凡例",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold
               ),
-            );
-          },
+            ),
+            const SizedBox(height: 12),
+            _buildTodayCompletionRate(),
+            const SizedBox(height: 12),
+            _buildLegendItem("未記録", Colors.grey.shade200),
+            _buildLegendItem("～20%", Colors.red.shade100),
+            _buildLegendItem("21～40%", Colors.orange.shade200),
+            _buildLegendItem("41～60%", Colors.yellow.shade400),
+            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+            _buildLegendItem("81～100%", Colors.green.shade500),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //今日の達成率表示を構築
+  Widget _buildTodayCompletionRate(){ 
+    //今日の達成率を表示するやつ(デバッグ用)
+    //FutureBuilder:非同期処理が完了するまで待ち、その後に特定のウィジェットを構築
+    return FutureBuilder<double>(
+      key: ValueKey('today-rate-$_rebuildKey'),
+      future: _getTodayCompletionRate(),
+      //snapshot:非同期プログラミングやウィジェットの状態の変更を監視する
+      builder: (context,snapshot){
+        //connectionState:非同期操作の状態
+        if(snapshot.connectionState==ConnectionState.waiting){
+          return const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          );
+        }
+
+        if(snapshot.hasError){
+          return const Text(
+            "エラー",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red,
+            ),
+          );
+        }
+
+        final rate=snapshot.data ?? 0.0;
+        final percentage=(rate*100).toInt();
+
+        return Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: _getHeatColor(rate),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child:Text(
+            "今日: $percentage%",
+            style: TextStyle(
+              color: rate>0.0
+                ? Colors.black
+                : Theme.of(context).colorScheme.onSurface,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         );
       },
+    );
+  }
+
+  //凡例の各項目を構築
+  Widget _buildLegendItem(String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
     );
   }
 }

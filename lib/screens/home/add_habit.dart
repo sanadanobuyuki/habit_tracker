@@ -67,6 +67,9 @@ class _AddHabitState extends State<AddHabit> {
     // 曜日データを文字列に変換
     final daysOfWeek = _getDaysOfWeekString();
 
+    //現在の日時取得
+    final now=DateTime.now();
+
     try {
       await _db.insertHabit(
         id: habitId,
@@ -76,6 +79,29 @@ class _AddHabitState extends State<AddHabit> {
         daysOfWeek: daysOfWeek,
         createdAt: DateTime.now().millisecondsSinceEpoch,
       );
+
+      //今日の未達成記録を自動生成
+      final today='${now.year}-${now.month.toString().padLeft(2,'0')}-${now.day.toString().padLeft(2,'0')}';
+      final weekday=now.weekday;
+
+      //今日が対象曜日かチェック
+      bool isTargetToday=true;
+      if(daysOfWeek!=null && daysOfWeek.isNotEmpty){
+        final days=daysOfWeek.split(',');
+        isTargetToday=days.contains(weekday.toString());
+      }
+
+      //対象曜日なら未達成記録を作成
+      if(isTargetToday){
+        final recordId='record_${habitId}_${now.millisecondsSinceEpoch}';
+        await _db.insertRecord(
+          id: recordId,
+          habitId: habitId,
+          date:today,
+          completed: 0,//未達成
+          recordedAt: now.millisecondsSinceEpoch,
+        );
+      }
 
       //実績チェック
       //習慣を作成した後、habit_count系の実績をチェック

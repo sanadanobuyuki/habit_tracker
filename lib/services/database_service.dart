@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 // ignore: unused_import
@@ -416,15 +415,10 @@ class DatabaseService {
   Future<double> getCompletionRateForDate(String date)async{
     final db=await database;
 
-    //日付を[その日の終わり]のタイムスタンプに変換
+    //日付をDateTimeに変換
     final dateTime=DateTime.parse(date);
-    final startOfDay=DateTime(
-      dateTime.year,
-      dateTime.month,
-      dateTime.day,
-      0,0,0,0,//0時0分0秒0ミリ秒のこと
-    ).millisecondsSinceEpoch;//結果としてその日の最初のミリ秒まで取れる
 
+    //日付を[その日の終わり]のタイムスタンプに変換
     final endOfDay=DateTime(
       dateTime.year,
       dateTime.month,
@@ -432,25 +426,55 @@ class DatabaseService {
       23,59,59,999,//23時59分59秒999ミリ秒
     ).millisecondsSinceEpoch;//結果としてその日の最後のミリ秒まで取れる
 
+    //曜日を取得(1=月曜、7=日曜)
+    final weekday=dateTime.weekday;
+
     //その日の記録を取得
-    final records=await db.rawQuery('''
-      SELECT hr.*, h.is_deleted,h.created_at,h.deleted_at
+    final results=await db.rawQuery('''
+      SELECT 
+        h.id as habit_id,
+        h.days_of_week,
+        hr.completed
       FROM habit_records hr
-      INNER JOIN habits h ON hr.habit_id = h.id
+      INNER JOIN habits h ON hr.habit_id = h.id 
       WHERE hr.date = ?
         AND h.created_at <= ?
         AND (h.is_deleted = 0 OR h.deleted_at > ? OR h.deleted_at IS NULL)
     ''',[date,endOfDay,endOfDay]);
 
-    if(records.isEmpty){
+    if(results.isEmpty){
       return 0.0;
     }
 
-    //達成した記録の数
-    final completedCount=records.where((r)=>r['completed']==1).length;
+    //曜日設定を考慮して対象の習慣をフィルタリング
+    final targetHabits=results.where((result){
+      final daysOfWeek=result['days_of_week'] as String?;
+
+      //daysOfWeekがnullまたは空＝毎日対象
+      if(daysOfWeek==null || daysOfWeek.isEmpty){
+        return true;
+      }
+
+      //カンマ区切りの文字列を分割してリストに変換
+      final days=daysOfWeek.split(',');
+
+      //指定された曜日に含まれているかチェック
+      return days.contains(weekday.toString());
+    }).toList();
+
+    if(targetHabits.isEmpty){
+      return 0.0;
+    }
+
+    //達成した習慣の数をカウント
+    //conpletedがnullの場合は０(未達成)として扱う
+    final completedCount=targetHabits.where((result){
+      final completed=result['completed'] as int;
+      return completed==1;
+    }).length;    
 
     //達成率を計算
-    return completedCount/records.length;
+    return completedCount / targetHabits.length;
   }
 
   // ===== 実績(achievements)の操作 =====
