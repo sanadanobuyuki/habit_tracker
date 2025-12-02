@@ -158,7 +158,12 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Icon(Icons.warning, color: Colors.red),
             SizedBox(width: 8),
-            Text('データベースをリセット'),
+            Expanded(
+              child: Text(
+                'データベースリセット',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
 
@@ -210,15 +215,15 @@ class SettingsScreen extends StatelessWidget {
     await _resetDatabase(context);
   }
 
-  /// データベースをリセットする
-  ///
-  /// 処理の流れ:
-  /// 1. ローディング表示
-  /// 2. データベースファイルを削除
-  /// 3. データベースを再作成
-  /// 4. 実績を再登録
-  /// 5. 完了メッセージ
-  /// 6. アプリの再起動を促す
+  // データベースをリセットする
+  //
+  // 処理の流れ:
+  // 1. ローディング表示
+  // 2. データベースファイルを削除
+  // 3. データベースを再作成
+  // 4. 実績を再登録
+  // 5. 完了メッセージ
+  // 6. アプリの再起動を促す
   Future<void> _resetDatabase(BuildContext context) async {
     // ローディングダイアログを表示
     showDialog(

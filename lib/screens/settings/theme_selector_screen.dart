@@ -172,9 +172,7 @@ class ThemeSelectorScreen extends StatelessWidget {
             ),
           ],
         ),
-        content: Text(
-          'テーマ「${theme.name}」を使用するには、特定の実績を解除する必要があります。\n\n実績画面で条件を確認してください。',
-        ),
+        content: Text('テーマ「${theme.name}」を使用するには、特定の実績を解除する必要があります。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

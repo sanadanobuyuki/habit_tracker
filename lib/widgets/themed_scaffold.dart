@@ -63,7 +63,7 @@ class ThemedScaffold extends StatelessWidget {
                   previous.stripeWidth != next.stripeWidth ||
                   previous.isVertical != next.isVertical ||
                   previous.themeData.scaffoldBackgroundColor !=
-                      next.themeData.scaffoldBackgroundColor; // ← 追加
+                      next.themeData.scaffoldBackgroundColor;
             },
             builder: (context, theme, _) {
               return _buildBackground(theme);

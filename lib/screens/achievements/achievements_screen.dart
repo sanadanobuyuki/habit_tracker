@@ -103,7 +103,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     }
   }
 
-  // ========== 【追加】ここから ==========
   /// テーマ報酬を受け取る
   ///
   /// 引数:
@@ -192,11 +191,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     );
   }
 
-  /// ダイアログを表示
-  ///
-  /// 引数:
-  /// - title: ダイアログのタイトル
-  /// - content: ダイアログの本文
+  // ダイアログを表示
+  //
+  // 引数:
+  // - title: ダイアログのタイトル
+  // - content: ダイアログの本文
   void _showDialog({required String title, required String content}) {
     showDialog(
       context: context,
@@ -348,7 +347,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     // テーマ報酬があるか
     final hasThemeReward =
         achievement.themeId != null && achievement.themeId!.isNotEmpty;
-    // ========== 【追加】ここまで ==========
 
     return Card(
       // elevation について:
@@ -358,7 +356,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          // 【変更】Row → Column に変更して、報酬ボタンを下に配置
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 上部: アイコンと情報
@@ -376,7 +373,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ],
             ),
 
-            // ========== 【追加】ここから ==========
             // テーマ報酬がある場合
             if (isUnlocked && hasThemeReward && userAchievement != null) ...[
               const SizedBox(height: 12),
@@ -465,10 +461,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     );
   }
 
-  /// 実績情報部分を作成
-  ///
-  /// 解除済み: 名前、説明、解除日時を表示
-  /// 未解除: ？？？を表示
+  // 実績情報部分を作成
+  //
+  // 解除済み: 名前、説明、解除日時を表示
+  // 未解除: ？？？を表示
   Widget _buildInfo(
     Achievement achievement,
     bool isUnlocked,

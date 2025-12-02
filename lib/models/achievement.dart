@@ -71,7 +71,7 @@ class Achievement {
       case 'habit_count':
         return '📋'; // 習慣の数
       case 'total_days':
-        return '📅'; // 累計達成日数
+        return '🗓️'; // 累計達成日数
       case 'streak':
         return '🔥'; // 連続達成日数
       default:
