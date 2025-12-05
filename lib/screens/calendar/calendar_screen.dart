@@ -18,7 +18,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //現在の年月
   DateTime _currentMonth = DateTime.now();
 
-  //画面が初回読み込み済みかどうか
+  //初回読み込みが完了したかどうか
   bool _hasLoadedOnce = false;
 
   //再描画を強制するためのキー
@@ -36,6 +36,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _loadInitial() async {
     await _loadMonthRecord();
     if(mounted){
+      //読み込み完了フラグを立てる
       setState(() => _hasLoadedOnce = true);
     }
   }
@@ -288,6 +289,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //日付セルを構築
   Widget _buildDateCell(DateTime date,int day){
+
+    //今日かどうかを判定
+    final isToday=_isToday(date);
+
     return FutureBuilder<double>(
       key: ValueKey('$_rebuildKey-${_formatDate(date)}'),
       future: _getCompletionRate(date),
@@ -299,6 +304,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(8),
+              border: isToday
+                ? Border.all(color: Theme.of(context).colorScheme.primary,width:3)
+                : null,
             ),
             child: Center(child: Text('$day')),
           );
@@ -313,18 +321,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(8),
+            border: isToday
+              ? Border.all(color:scheme.primary,width:3)
+              : null,
           ),
           child: Center(
             child: Text(
               '$day',
               style: TextStyle(
                 color: rate > 0.0 ? Colors.black : scheme.onSurface,
+                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),
         );
       }
     );
+  }
+
+  //今日かどうかを判定するbool文
+  bool _isToday(DateTime date){
+    final now=DateTime.now();
+    return date.year==now.year &&
+          date.month==now.month &&
+          date.day==now.day;
   }
 
   //凡例
