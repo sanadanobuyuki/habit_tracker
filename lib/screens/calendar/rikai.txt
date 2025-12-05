@@ -1,0 +1,311 @@
+処理の流れ
+1-画面初期化（initState）
+
+2-データ読み込み（_loadInitial）
+
+3-月の記録読み込み(_loadMonthRecord)
+
+4-カレンダー表示（build）
+
+5-各日付セルで達成率を取得・表示（_buildDateCell）
+
+各工程の詳細
+
+1.画面初期化について---------------------------------------------------------------------------
+_CalendarScreenState
+
+//現在表示している年月
+DateTime _currentMonth=DateTime.now();
+
+// 初回読み込みが完了したかどうか
+  bool _hasLoadedOnce = false;
+
+// 再描画を強制するためのキー 重要！
+int _rebuildKey = 0;
+
+#_rebuildKeyの役割#
+
+FutureBuilderは通常、同じfutureなら再実行しないが
+_rebuildKeyを変更することで「新しいキー」となり、FutureBuilderが再実行される。
+これにより、月が替わったときやカレンダーが表示されたときにデータを再取得できる。
+
+
+2.データ読み込みの仕組みについて-----------------------------------------------------------
+
+//初回読み込み
+_loadInitial()
+
+Future<void> _loadInitial() async {
+  await _loadMonthRecord();//月の記録を読み込む
+  if(mounted){
+    setState(()　=> _hasLoadedOnce = true); //読み込み完了フラグを立てる
+　}
+}
+
+//月の記録を読み込む
+_loadMonthRecord()
+
+Future<void> _loadMonthRecord() async {
+  // _rebuildKeyをインクリメント
+  // これにより、すべてのFutureBuilderが再実行される
+  if(mounted){
+    setState(() => _rebuildKey++);
+  }
+}
+
+この関数は実際にデータを取得しない
+_rebuildKeyを変更することで,各日付セルのFutureBuilderに「データを再取得しろ」と指示を出すだけ
+
+
+3.カレンダーの構築について----------------------------------------------------------------------------
+
+//グリッド状にカレンダーを作成
+_buildCalendar()
+
+Widget _buildCalendar() {
+  //月の最初の日:2025/12/01
+  final firstDay = DateTime(_currentMonth.year,_currentMonth.month,1);
+
+  //月の最後の日:2025/12/31
+  final lastDay = DateTime(_currentMonth.year,_currentMonth.month + 1,0);
+
+  //月最初の日が何曜日か:1(月)～7(日)
+  //例：12/1が日曜日なら startWeekday=7
+  final startWeekday=firstDay.weekday;
+
+  
+  return GridView.builder(
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount:7, //横に7列(月～日)
+      childAspectRatio:1.0, //正方形のセル
+    ),
+
+    //表示するセルの総数
+    //月の日数＋空白セル
+    //例：31日＋6空白=37セル
+    itemCount: lastDay.day + startWeekday - 1,
+
+    itemBuilder:(context,index){
+      //空白の分だけ空セルを返す
+      //例: startWeekday=7(日曜始まり)なら  ここでstartWeekday-1とindexの差だけ空セル配置する
+      // index 0～5は空セル
+      if(index<startWeekday - 1){
+        return const SizedBox(); //空セル
+      }
+
+      //日付の計算
+      //index=6 - 7 + 2 = 1(1日)
+      final day=index-startWeekday+2;
+
+      //完全なDateTimeを作成
+      //dayだけでは何年何月の1日かが分からないため完全なものが必要
+      final date = DateTime(_currentMonth.year,_currentMonth.month,day);
+
+      return _buildDateCell(date,day);
+    },
+  );
+}
+
+4.日付セルの表示と達成率取得について-----------------------------------------------------------------
+
+Widget _buildDateCell(DateTime date,int day){
+    return FutureBuilder<double>(
+        //重要！このキーが変わると、Futureが再実行される
+        key:ValueKey('$_rebuildKey-${_formatDate(date)}'),
+
+        //この日付の達成率を非同期で取得
+        future: _getCompletionRate(date),
+
+        //キーの仕組み
+        //12/5のセルでは
+        //_rebuildKey=0の場合
+        //key='0-2025-12-05'
+        //月を切り替えて _rebuildKey=1になると
+        //key='1-2025-12-05'となり
+        //キーが変わったため、Futureが再実行される
+
+
+        //このbuilderは何回も実行される
+        //最初に実行したときデータベースに接続中
+        //データベースから結果が返ってきたときにも実行される
+        builder:(context,snapshot){
+
+            //データ読み込み中
+            if(!snapshot.hasData){
+                //グレーの読み込み中表示
+                decoration:BoxDecoration(
+                    color:Colors.grey.shade200,
+                    borderRadius:BorderRadius.circular(8),
+                ),
+                child:Center(child:Text('$day')),
+            };
+        }
+        //FutureBuilderの状態遷移
+        1.future開始
+        snapshot.hasData=false;//グレーの読み込み中表示
+
+        2.future完了
+        snapshot.hasData=true;//達成率に応じた色で表示
+
+        //snapshotとは非同期処理の現在の状態を保存しているもの
+        /*snapshot{
+            connectionState: ConnectionState,//接続状態
+            data:double?,//取得したデータ 指定した型によって違う今回はdouble
+            error:Object,//エラー情報
+            hasData:bool,//データがあるか
+            hasError:bool,//エラーがあるか
+        }*/
+        //という情報を持っている
+
+
+        final rate=snapshot.data!;//達成率(0.0～1.0)
+        final color=_getHeatColor(rate);//色を取得
+
+        return Container(
+            decoration:BoxDecoration(
+                color:color,//ヒートマップカラー
+                borderRadius:BorderRadius.circular(8),
+                //角丸くする
+            ),
+            child:Center(
+                child:Text(
+                    '$day',
+                    style:TextStyle(
+                        //達成率がある場合は黒、ない場合はテーマ色
+                        color:rate>0.0 ? Colors.black : scheme.onSurface,
+                    ),
+                ),
+            ),
+        );
+    );
+}
+
+5.達成率の計算------------------------------------------------------------------------------
+
+Future<double> _getCompletionRate(DateTime date) async {
+    //日付を'YYYY-MM-DD'形式に変換
+    final dateString = _formatDate(date);
+
+    //データベースから直接達成率を取得
+    return await _db.getCompletionRateForDate(dateString);
+}
+
+database_service.dartにある関数
+Future<double> getCompletionRateForDate(String date) async {
+    //その日の記録を取得
+    //曜日設定を考慮して対象の習慣をフィルタリング
+    //達成率を計算(達成率/対象習慣数)
+
+    //例:対象習慣が３つ、達成が２つ
+    //2/3=0.666...(66.6%)
+}
+
+6.ヒートマップの色分け-------------------------------------------------------------------------
+
+Color _getHeatColor(double rate){
+    final colorScheme=Theme.of(context).colorScheme;
+
+    if(rate <= 0.0) return colorScheme.onSurfaceVariant.withValues(alpha:0.1);//未記録
+    if(rate <= 0.0) return Colors.red.shade100;//0-20% 赤
+    ...以下ほぼ同様
+
+    //colorScheme.onSurfaceVariant.withValues(alpha:0.1)
+    //テーマに合わせた文字色
+}
+
+7.月切り替えの処理-----------------------------------------------------------------------------
+
+void _previousMonth(){
+    if(!mounted) return;
+
+    setState((){
+        //前月に移動
+        //例：2025/12→2025/11
+        _currentMonth=DateTime(_currentMonth.year,_currentMonth.month-1);
+    });
+
+    //記録を再読み込み
+    _loadMonthRecord();//_rebuildKeyをインクリメント
+}
+
+//mountedとは
+mounted=true:今の画面が存在している
+mounted=false:画面はすでに破棄されている
+
+//動作の流れ
+矢印ボタンをタップ
+    ↓
+_currentMonthを変更(例：12月 → 11月)
+    ↓
+_loadMonthRecord() が _rebuildKeyをインクリメント
+    ↓
+すべての日付セルのFutureBuilderが再実行
+    ↓
+11月のデータが読み込まれて表示される
+
+//次月と今月への移動も同じような感じ
+//2025/12から2026/1に移動できるのは
+//DateTimeが13月や0月になると自動的に年を調整してくれる
+
+8.画面表示時の自動更新---------------------------------------------------------------------------
+
+return VisibilityDetector(
+    key:const Key('calendar-screen'),
+    //↑この画面を識別するための名前
+
+
+    //画面の表示状態が変わったときに呼ばれる関数
+    onVisibilityChanged:(info) {        
+        //画面が50%以上見えている＆＆初回読み込み済み
+        if(info.visibilityFraction > 0.5 && _hasLoadedOnce && mounted){
+            //データを再読み込み
+            _loadMonthRecord();
+        }
+    },
+)
+
+//VisibilityDetectorとは
+画面がどれだけ見えているかを検出するパッケージ
+
+//使用場面
+例：ホーム画面で習慣を達成
+    ↓
+カレンダー画面に切り替え
+    ↓
+VisibilityDetectorが検知
+    ↓
+自動的にデータを再読み込み
+    ↓
+最新の達成率が表示される
+
+終.まとめ----------------------------------------------------------------------------------------
+
+・画面初期化
+→initState()→_loadInitial()
+
+・初回データ読み込み
+→_loadMonthRecord() (_rebuildKey++)
+
+・カレンダー表示（build）
+→_buildCalendar()
+
+・各日付セル
+→_buildDateCell(date,day)
+    →FutureBuilder
+        →_getCompletionRate(date)
+            →データベースから達成率を取得
+                →_getHeatColor(rate)
+                    →色付きセルを表示
+
+・ユーザー操作
+    月切り替え：_previousMonth() / _nextMonth()
+    今月に戻る：_goToToday()
+    画面表示：VisibilityDetector
+        →すべて _loadMonthRecord()を呼ぶ
+            →_rebuildKey++で全セル再描画
+
+重要なポイント
+・_rebuildKeyの役割:FutureBuilderを強制的に再実行
+・非同期処理:各日付セルが独立してデータを取得
+・効率的な更新:_rebuildKeyをインクリメント
+・自動更新:VisibilityDetectorで画面表示時に最新データを反映
