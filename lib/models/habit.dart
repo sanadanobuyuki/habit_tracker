@@ -10,7 +10,7 @@ class Habit {
   final String? daysOfWeek; // 曜日指定 (null=毎日, "1,3,5"=月水金)
   final int createdAt; // 作成日時
   final int isDeleted; // 削除フラグ
-  final int? deletedAt;//タイムスタンプを保存
+  final int? deletedAt; //タイムスタンプを保存
 
   // コンストラクタ
   //
@@ -56,6 +56,48 @@ class Habit {
     return DateTime(dt.year, dt.month, dt.day);
   }
 
+  // daysOfWeek 文字列を List<int> に変換する getter
+  //
+  // 役割:
+  // データベースに保存されている文字列形式の曜日指定（例: "1,3,5"）を
+  // プログラムで扱いやすい数値のリスト（例: [1, 3, 5]）に変換する
+  //
+  // 使い方:
+  // Habit habit = Habit(daysOfWeek: "1,3,5", ...);
+  // List<int> days = habit.frequency; // [1, 3, 5]
+  //
+  // 戻り値:
+  // - null または空文字列の場合: 空のリスト [] （毎日対象を意味する）
+  // - "1,3,5" の場合: [1, 3, 5] （月・水・金を意味する）
+  //
+  // 曜日の番号:
+  // 1=月曜日, 2=火曜日, 3=水曜日, 4=木曜日, 5=金曜日, 6=土曜日, 7=日曜日
+  List<int> get frequency {
+    // daysOfWeek が null または空文字列の場合
+    if (daysOfWeek == null || daysOfWeek!.isEmpty) {
+      return []; // 空のリストを返す（毎日対象を意味する）
+    }
+
+    try {
+      // カンマ区切りの文字列を分割してリストに変換
+      // 例: "1,3,5" → ["1", "3", "5"]
+      final dayStrings = daysOfWeek!.split(',');
+
+      // 文字列のリストを数値のリストに変換
+      // 例: ["1", "3", "5"] → [1, 3, 5]
+      return dayStrings
+          .map((s) => int.tryParse(s.trim())) // trim() で空白を除去してから数値に変換
+          .where((day) => day != null) // 変換失敗した null を除外
+          .cast<int>() // List<int?> を List<int> に変換
+          .toList();
+    } catch (e) {
+      // パースエラーが発生した場合は空のリストを返す
+      // これによりアプリが落ちるのを防ぐ
+      print('frequency パースエラー: $daysOfWeek, $e');
+      return [];
+    }
+  }
+
   // HabitオブジェクトをMapに変換
   //
   // 使い方:
@@ -72,7 +114,7 @@ class Habit {
       'days_of_week': daysOfWeek, // 追加
       'created_at': createdAt,
       'is_deleted': isDeleted,
-      'deleted_at':deletedAt,
+      'deleted_at': deletedAt,
     };
   }
 

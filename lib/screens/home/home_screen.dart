@@ -8,7 +8,7 @@ import 'add_habit.dart';
 ///
 /// 役割:
 /// - アプリのホーム画面を表示する
-/// - 習慣リストを表示
+/// - 習慣リストをグループ別に表示
 /// - 習慣の追加・削除・達成状態の切り替え
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -151,6 +151,81 @@ class _HomeScreenState extends State<HomeScreen> {
         false;
   }
 
+  /// 習慣を3つのグループに分ける
+  ///
+  /// 処理の流れ:
+  /// 1. 今日の曜日を取得 (1=月曜日, 7=日曜日)
+  /// 2. 各習慣をループして、今日が対象日かチェック
+  /// 3. 対象日の場合は達成状態で分類、対象外の場合は別グループへ
+  /// 4. 今日は対象外の習慣を曜日順にソート
+  ///
+  /// 戻り値:
+  /// - incomplete: 今日の未達成の習慣
+  /// - completed: 今日の達成済みの習慣
+  /// - notToday: 今日は対象外の習慣(曜日順)
+  Map<String, List<Habit>> _groupHabits() {
+    final today = DateTime.now().weekday; // 1=月曜日, 7=日曜日
+
+    final incomplete = <Habit>[];
+    final completed = <Habit>[];
+    final notToday = <Habit>[];
+
+    for (final habit in _habits) {
+      try {
+        // 今日が対象の曜日かチェック
+        // habit.frequency は Habit モデルの getter で、
+        // daysOfWeek 文字列（例: "1,3,5"）を List<int>（例: [1,3,5]）に変換する
+        // null の場合は空のリスト [] を返す
+        final frequency = habit.frequency ?? [];
+
+        // 空のリストまたはnullの場合は毎日対象とする
+        // contains(today) で今日の曜日が含まれているかチェック
+        final isTodayTarget = frequency.isEmpty || frequency.contains(today);
+
+        if (isTodayTarget) {
+          // 今日が対象の場合、達成状態でグループ分け
+          final completedStatus = _todayRecords[habit.id] ?? 0;
+          if (completedStatus == 1) {
+            completed.add(habit); // 達成済みグループ
+          } else {
+            incomplete.add(habit); // 未達成グループ
+          }
+        } else {
+          // 今日が対象外の場合
+          notToday.add(habit);
+        }
+      } catch (e) {
+        // エラーが発生した場合は今日の未達成に入れる
+        // これによりアプリが落ちるのを防ぐ
+        print('グループ分けエラー: ${habit.name}, $e');
+        incomplete.add(habit);
+      }
+    }
+
+    // 今日は対象外の習慣を曜日順にソート
+    try {
+      notToday.sort((a, b) {
+        // 各習慣の最初の曜日で比較
+        final aFrequency = a.frequency ?? [];
+        final bFrequency = b.frequency ?? [];
+        // 空のリストの場合は 8 を使う（日曜日の次 = 最後に表示）
+        final aFirstDay = aFrequency.isNotEmpty ? aFrequency.first : 8;
+        final bFirstDay = bFrequency.isNotEmpty ? bFrequency.first : 8;
+        // 小さい曜日番号が先に来るようにソート
+        return aFirstDay.compareTo(bFirstDay);
+      });
+    } catch (e) {
+      print('ソートエラー: $e');
+      // ソートに失敗しても続行（順番が変わらないだけ）
+    }
+
+    return {
+      'incomplete': incomplete,
+      'completed': completed,
+      'notToday': notToday,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,8 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
           : _habits.isEmpty
           // 習慣がない場合の表示
           ? _buildEmptyView()
-          // 習慣がある場合の表示
-          : _buildHabitList(),
+          // 習慣がある場合の表示（グループ別）
+          : _buildGroupedHabitList(),
 
       // FloatingActionButton = 画面右下の丸いボタン
       floatingActionButton: FloatingActionButton(
@@ -214,43 +289,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 習慣リストを表示
+  /// グループ別に習慣リストを表示
   ///
-  /// ListView.builder について:
-  /// リストを効率的に表示する
-  /// itemCount = リストの項目数
-  /// itemBuilder = 各項目をどう表示するか
-  Widget _buildHabitList() {
-    return ListView.builder(
+  /// 処理の流れ:
+  /// 1. _groupHabits() で習慣を3つのグループに分類
+  /// 2. 各グループが空でなければヘッダーと習慣カードを表示
+  /// 3. 表示順序: 今日の未達成 → 達成済み → 今日は対象外
+  ///
+  /// ListView について:
+  /// children に直接ウィジェットのリストを渡す方式
+  /// ListView.builder と違い、グループヘッダーなど
+  /// 様々なウィジェットを自由に配置できる
+  Widget _buildGroupedHabitList() {
+    // 習慣を3つのグループに分類
+    final groups = _groupHabits();
+    final incomplete = groups['incomplete']!;
+    final completed = groups['completed']!;
+    final notToday = groups['notToday']!;
+
+    return ListView(
       // padding = リスト全体の余白
       padding: const EdgeInsets.all(16),
+      children: [
+        // 1. 今日の未達成の習慣
+        // if と ... を組み合わせた条件付き表示
+        // グループが空でなければヘッダーとカードを表示
+        if (incomplete.isNotEmpty) ...[
+          _buildGroupHeader('今日の習慣', incomplete.length),
+          // ... はスプレッド演算子: リストの中身を展開する
+          // map() で各習慣を HabitCard ウィジェットに変換
+          ...incomplete.map((habit) => _buildHabitCardWidget(habit)),
+          const SizedBox(height: 24), // グループ間の余白
+        ],
 
-      // itemCount = 表示する項目の数
-      itemCount: _habits.length,
+        // 2. 今日の達成済みの習慣
+        if (completed.isNotEmpty) ...[
+          _buildGroupHeader('達成済み', completed.length),
+          ...completed.map((habit) => _buildHabitCardWidget(habit)),
+          const SizedBox(height: 24),
+        ],
 
-      // itemBuilder = 各項目をどう表示するか
-      // context = 画面の情報
-      // index = 何番目の項目か(0から始まる)
-      itemBuilder: (context, index) {
-        final habit = _habits[index];
-        final completedStatus = _todayRecords[habit.id] ?? 0;
+        // 3. 今日は対象外の習慣（曜日順にソート済み）
+        if (notToday.isNotEmpty) ...[
+          _buildGroupHeader('今日は対象外', notToday.length),
+          ...notToday.map((habit) => _buildHabitCardWidget(habit)),
+        ],
+      ],
+    );
+  }
 
-        // HabitCard ウィジェットで習慣カードを表示
-        // ウィジェット化することで、コードが見やすくなり、再利用もできる
-        return HabitCard(
-          habit: habit,
-          completedStatus: completedStatus,
-          onTap: () => _toggleHabitCompletion(habit),
-          onDeleteConfirm: () async {
-            // 削除確認ダイアログを表示
-            final confirmed = await _showDeleteConfirmDialog(habit);
-            if (confirmed) {
-              // 確認された場合のみ削除実行
-              await _deleteHabit(habit);
-            }
-            return confirmed;
-          },
-        );
+  /// グループヘッダーを作成
+  ///
+  /// 表示内容:
+  /// - タイトル（例: "今日の習慣"）
+  /// - 件数バッジ（例: "2"）
+  ///
+  /// 引数:
+  /// - title: グループのタイトル
+  /// - count: グループ内の習慣の数
+  Widget _buildGroupHeader(String title, int count) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      child: Row(
+        children: [
+          // グループタイトル
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(width: 8), // タイトルとバッジの間の余白
+          // 件数バッジ
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// HabitCardウィジェットを作成
+  ///
+  /// 処理の流れ:
+  /// 1. 習慣の達成状態を取得
+  /// 2. HabitCard ウィジェットを作成
+  /// 3. タップ時とスワイプ削除時の処理を設定
+  ///
+  /// HabitCard について:
+  /// ウィジェット化することで、コードが見やすくなり、再利用もできる
+  Widget _buildHabitCardWidget(Habit habit) {
+    final completedStatus = _todayRecords[habit.id] ?? 0;
+
+    return HabitCard(
+      habit: habit,
+      completedStatus: completedStatus,
+      // onTap = カードをタップしたときの処理
+      onTap: () => _toggleHabitCompletion(habit),
+      // onDeleteConfirm = スワイプして削除確認が必要なときの処理
+      onDeleteConfirm: () async {
+        // 削除確認ダイアログを表示
+        final confirmed = await _showDeleteConfirmDialog(habit);
+        if (confirmed) {
+          // 確認された場合のみ削除実行
+          await _deleteHabit(habit);
+        }
+        return confirmed;
       },
     );
   }
