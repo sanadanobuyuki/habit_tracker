@@ -103,8 +103,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //金色のグラデーション定義
   LinearGradient glowingGoldGradient = LinearGradient(
+    //begin グラデーションを始める位置
     begin: Alignment.topLeft,
+    //end グラデーションを終える位置
     end: Alignment.bottomRight,
+    //stops グラデーションの各色が始まる位置を0.0から1.0の範囲で指定
     stops: [0.0, 0.45, 0.7, 1.0],
     colors: [
       Color(0xFFFFF8E1), // 強いハイライト（光）
@@ -321,6 +324,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return Container(
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
+            //達成率が100%ならグラデーション、それ以外は単色
             gradient: rate >= 1.0 ? glowingGoldGradient : null,
             color: rate < 1.0 ? color : null,
             borderRadius: BorderRadius.circular(10),
