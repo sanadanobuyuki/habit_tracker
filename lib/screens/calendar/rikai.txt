@@ -20,14 +20,15 @@ DateTime _currentMonth=DateTime.now();
 // 初回読み込みが完了したかどうか
   bool _hasLoadedOnce = false;
 
-// 再描画を強制するためのキー 重要！
-int _rebuildKey = 0;
+//達成率データをキャッシュ
+  Map<String , double> _completionRateCache={};
+キャッシュの原理として
+非同期処理を事前に完了させてから、描画時は同期的にメモリから取得
+これによりすべてのデータを取得してから一度に反映させるため
+ちらつきが改善される
 
-#_rebuildKeyの役割#
-
-FutureBuilderは通常、同じfutureなら再実行しないが
-_rebuildKeyを変更することで「新しいキー」となり、FutureBuilderが再実行される。
-これにより、月が替わったときやカレンダーが表示されたときにデータを再取得できる。
+//ローディング状態
+bool _isLoading=false;
 
 
 2.データ読み込みの仕組みについて-----------------------------------------------------------
@@ -43,14 +44,35 @@ Future<void> _loadInitial() async {
 }
 
 //月の記録を読み込む
-_loadMonthRecord()
+_loadMonthRecord(){
+     //ロード中なら何もしない
+    if(_isLoading) return;
 
-Future<void> _loadMonthRecord() async {
-  // _rebuildKeyをインクリメント
-  // これにより、すべてのFutureBuilderが再実行される
-  if(mounted){
-    setState(() => _rebuildKey++);
-  }
+    setState(()=> _isLoading=true);
+
+    //月の最初の日
+    final lastDay=DateTime(_currentMonth.year,_currentMonth.month+1,0);
+
+    //新しいキャッシュを作成
+    final newCache=<String,double>{};
+
+    //各日付の達成率を取得
+    //その月のすべての日付の達成率を一度に取得
+    for(int day=1;day<=lastDay.day;day++){
+      final date=DateTime(_currentMonth.year,_currentMonth.month,day);
+      final dateString=_formatDate(date);
+
+      //達成率を取得してキャッシュに保存
+      final rate=await _db.getCompletionRateForDate(dateString);
+      newCache[dateString]=rate;
+    }
+
+    if (mounted) {
+      setState((){
+        _completionRateCache=newCache;
+        _isLoading=false;
+      });
+    }
 }
 
 この関数は実際にデータを取得しない
@@ -109,86 +131,79 @@ Widget _buildCalendar() {
 4.日付セルの表示と達成率取得について-----------------------------------------------------------------
 
 Widget _buildDateCell(DateTime date,int day){
-    return FutureBuilder<double>(
-        //重要！このキーが変わると、Futureが再実行される
-        key:ValueKey('$_rebuildKey-${_formatDate(date)}'),
+    //今日かどうかを判定
+    final isToday = _isToday(date);
 
-        //この日付の達成率を非同期で取得
-        future: _getCompletionRate(date),
+    //キャッシュから達成率を取得
+    //今日の達成率をデータベースから直接取得
+    final rate = _getCompletionRate(date);
+    final scheme=Theme.of(context).colorScheme;
 
-        //キーの仕組み
-        //12/5のセルでは
-        //_rebuildKey=0の場合
-        //key='0-2025-12-05'
-        //月を切り替えて _rebuildKey=1になると
-        //key='1-2025-12-05'となり
-        //キーが変わったため、Futureが再実行される
-
-
-        //このbuilderは何回も実行される
-        //最初に実行したときデータベースに接続中
-        //データベースから結果が返ってきたときにも実行される
-        builder:(context,snapshot){
-
-            //データ読み込み中
-            if(!snapshot.hasData){
-                //グレーの読み込み中表示
-                decoration:BoxDecoration(
-                    color:Colors.grey.shade200,
-                    borderRadius:BorderRadius.circular(8),
-                ),
-                child:Center(child:Text('$day')),
-            };
-        }
-        //FutureBuilderの状態遷移
-        1.future開始
-        snapshot.hasData=false;//グレーの読み込み中表示
-
-        2.future完了
-        snapshot.hasData=true;//達成率に応じた色で表示
-
-        //snapshotとは非同期処理の現在の状態を保存しているもの
-        /*snapshot{
-            connectionState: ConnectionState,//接続状態
-            data:double?,//取得したデータ 指定した型によって違う今回はdouble
-            error:Object,//エラー情報
-            hasData:bool,//データがあるか
-            hasError:bool,//エラーがあるか
-        }*/
-        //という情報を持っている
-
-
-        final rate=snapshot.data!;//達成率(0.0～1.0)
-        final color=_getHeatColor(rate);//色を取得
-
-        return Container(
-            decoration:BoxDecoration(
-                color:color,//ヒートマップカラー
-                borderRadius:BorderRadius.circular(8),
-                //角丸くする
+    //達成率がまだロードされていない場合
+    if(rate==null){
+      return Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: isToday
+            ? Border.all(color: scheme.primary,width: 3)
+            : null,
+        ),
+        child: Center(
+          child: Text(
+            "$day",
+            style: TextStyle(
+              color: scheme.onSurface,
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
             ),
-            child:Center(
-                child:Text(
-                    '$day',
-                    style:TextStyle(
-                        //達成率がある場合は黒、ない場合はテーマ色
-                        color:rate>0.0 ? Colors.black : scheme.onSurface,
-                    ),
+          ),
+        ),
+      );
+    }
+    
+    final color=_getHeatColor(rate);//色を取得
+
+    return Container(
+        decoration:BoxDecoration(
+            color:color,//ヒートマップカラー
+            borderRadius:BorderRadius.circular(8),
+            //角丸くする
+        ),
+        child:Center(
+            child:Text(
+                '$day',
+                style:TextStyle(
+                    //達成率がある場合は黒、ない場合はテーマ色
+                    color:rate>0.0 ? Colors.black : scheme.onSurface,
                 ),
             ),
-        );
+        ),
     );
 }
 
 5.達成率の計算------------------------------------------------------------------------------
 
-Future<double> _getCompletionRate(DateTime date) async {
+double? _getCompletionRate(DateTime date){
     //日付を'YYYY-MM-DD'形式に変換
     final dateString = _formatDate(date);
 
     //データベースから直接達成率を取得
-    return await _db.getCompletionRateForDate(dateString);
+    return _completionRateCache[dateString];
+
+    _loadMonthRecordのrate変数でDBにアクセス
+    newCache[dateString]=rate;でnewCacheに代入
+    _completionRateCache=newCache;で代入してるから
+    実質データベースから直接達成率を取得している
+    詳しくはデータベースから取得した値をメモリに保存し、
+    キャッシュから達成率を取得
 }
+なぜdouble? というnull許容型なのか
+達成率が0.0%の時とまだロードができていない時のnullの判断がつかないから
+nullを無理やり修正すると0.0%と返ってきてしまうため同じ0.0%の扱いになる
+そこでnull許容型にすることで
+その日の達成率が本当に0.0%だったらテーマに合わせた背景色
+まだロード中だった場合やデータがなかった場合はグレー表示にできるから
 
 database_service.dartにある関数
 Future<double> getCompletionRateForDate(String date) async {
@@ -222,15 +237,23 @@ void _previousMonth(){
         //前月に移動
         //例：2025/12→2025/11
         _currentMonth=DateTime(_currentMonth.year,_currentMonth.month-1);
+    
+        //キャッシュをクリア
+        _completionRateCache.clear();
     });
 
     //記録を再読み込み
-    _loadMonthRecord();//_rebuildKeyをインクリメント
+    _loadMonthRecord();
 }
 
 //mountedとは
 mounted=true:今の画面が存在している
 mounted=false:画面はすでに破棄されている
+
+//キャッシュクリアの目的
+データの正確性：古いデータが混ざらいないようにする
+メモリ効率：不要なデータを削除する
+UXの改善：古いデータが一瞬表示されることを防ぐ
 
 //動作の流れ
 矢印ボタンをタップ
@@ -284,28 +307,25 @@ VisibilityDetectorが検知
 →initState()→_loadInitial()
 
 ・初回データ読み込み
-→_loadMonthRecord() (_rebuildKey++)
+→_loadMonthRecord() ()
 
 ・カレンダー表示（build）
-→_buildCalendar()
+→_buildCalendar(newCache[dateString])
 
 ・各日付セル
 →_buildDateCell(date,day)
-    →FutureBuilder
-        →_getCompletionRate(date)
-            →データベースから達成率を取得
-                →_getHeatColor(rate)
-                    →色付きセルを表示
+    →_getCompletionRate(date)
+        →データベースから達成率を取得
+            →_getHeatColor(rate)
+                →色付きセルを表示
 
 ・ユーザー操作
     月切り替え：_previousMonth() / _nextMonth()
     今月に戻る：_goToToday()
     画面表示：VisibilityDetector
         →すべて _loadMonthRecord()を呼ぶ
-            →_rebuildKey++で全セル再描画
+            →キャッシュから達成率を取得
 
 重要なポイント
-・_rebuildKeyの役割:FutureBuilderを強制的に再実行
-・非同期処理:各日付セルが独立してデータを取得
-・効率的な更新:_rebuildKeyをインクリメント
 ・自動更新:VisibilityDetectorで画面表示時に最新データを反映
+・キャッシュ:取得した達成率をメモリに保存し、呼び出されたら一度に反映
