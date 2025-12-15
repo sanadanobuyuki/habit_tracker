@@ -12,7 +12,6 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-
   final DatabaseService _db = DatabaseService();
 
   //現在の年月
@@ -22,7 +21,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   bool _hasLoadedOnce = false;
 
   //再描画を強制するためのキー
-  int _rebuildKey=0;
+  int _rebuildKey = 0;
 
   @override
   void initState() {
@@ -35,7 +34,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //初回データ読み込み
   Future<void> _loadInitial() async {
     await _loadMonthRecord();
-    if(mounted){
+    if (mounted) {
       //読み込み完了フラグを立てる
       setState(() => _hasLoadedOnce = true);
     }
@@ -48,7 +47,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //_rebuildKeyを更新してFutureBuilderに再計算を促す
   Future<void> _loadMonthRecord() async {
     //_rebuildKeyをインクリメントして、すべてのFutureBuilderを再実行
-    if(mounted){
+    if (mounted) {
       setState(() => _rebuildKey++);
     }
   }
@@ -56,10 +55,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //=========================================月切り替え================================
   //前の月に切り替え
   void _previousMonth() {
-    if(!mounted) return;
-      setState(() {
-        _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
-      });
+    if (!mounted) return;
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+    });
 
     //記録を再読み込み
     _loadMonthRecord();
@@ -67,22 +66,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //次の月に切り替え
   void _nextMonth() {
-    if(!mounted) return;
-      setState(() {
-        _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
-      });
-    
+    if (!mounted) return;
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+    });
+
     //記録を再読み込み
     _loadMonthRecord();
   }
 
   //今月に戻る
   void _goToToday() {
-    if(!mounted) return;
-      setState(() {
-        _currentMonth = DateTime.now();
-      });
-    
+    if (!mounted) return;
+    setState(() {
+      _currentMonth = DateTime.now();
+    });
+
     //記録を再読み込み
     _loadMonthRecord();
   }
@@ -91,27 +90,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //達成率に応じた色変更(ヒートマップ要素)
   Color _getHeatColor(double rate) {
     //テーマに合わせた色選択
-    final colorScheme=Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-                                  //onSurfaceVariant:テーマに合わせた背景色
-    if (rate <= 0.0) return colorScheme.onSurfaceVariant.withValues(alpha:0.1);
+    //onSurfaceVariant:テーマに合わせた背景色
+    if (rate <= 0.0) return colorScheme.onSurfaceVariant.withValues(alpha: 0.1);
     if (rate <= 0.2) return Colors.red.shade100;
     if (rate <= 0.4) return Colors.orange.shade200;
     if (rate <= 0.6) return Colors.yellow.shade400;
-    if (rate <= 0.8) return Colors.lightGreen.shade500;
-    return Colors.green.shade500;
+    if (rate < 1.0) return Colors.green.shade500;
+    return const Color(0xFFD4AF37); // 100%
   }
 
+  //金色のグラデーション定義
+  LinearGradient glowingGoldGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0.0, 0.45, 0.7, 1.0],
+    colors: [
+      Color(0xFFFFF8E1), // 強いハイライト（光）
+      Color(0xFFFFE082), // 明るい金
+      Color(0xFFD4AF37), // ベース金
+      Color(0xFFB8962E), // 影
+    ],
+  );
+
   //指定日の達成率を取得
-  Future<double> _getCompletionRate(DateTime date)async{
-    final dateString=_formatDate(date);
+  Future<double> _getCompletionRate(DateTime date) async {
+    final dateString = _formatDate(date);
 
     //データベースから直接達成率を取得
     return await _db.getCompletionRateForDate(dateString);
   }
 
   //今日の達成率を取得（デバッグ用）
-  Future<double> _getTodayCompletionRate() async{
+  Future<double> _getTodayCompletionRate() async {
     return await _getCompletionRate(DateTime.now());
   }
 
@@ -136,10 +148,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           _loadMonthRecord();
         }
       },
-      child: Scaffold(
-        appBar: _buildAppBar(),
-        body: _buildBody()
-      ),
+      child: Scaffold(appBar: _buildAppBar(), body: _buildBody()),
     );
   }
 
@@ -198,10 +207,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         //年月表示
         Text(
           '${_currentMonth.year}年${_currentMonth.month}月',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
 
         //次月ボタン
@@ -226,17 +232,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         Text("金", style: TextStyle(fontWeight: FontWeight.bold)),
         Text(
           "土",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.blue
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
         ),
         Text(
           "日",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.red
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
         ),
       ],
     );
@@ -282,48 +282,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
         //計算したdayから完全なDateTimeを作成
         final date = DateTime(_currentMonth.year, _currentMonth.month, day);
 
-        return _buildDateCell(date,day);
+        return _buildDateCell(date, day);
       },
     );
   }
 
   //日付セルを構築
-  Widget _buildDateCell(DateTime date,int day){
-
+  Widget _buildDateCell(DateTime date, int day) {
     //今日かどうかを判定
-    final isToday=_isToday(date);
+    final isToday = _isToday(date);
 
     return FutureBuilder<double>(
       key: ValueKey('$_rebuildKey-${_formatDate(date)}'),
       future: _getCompletionRate(date),
-      builder: (context,snapshot){
+      builder: (context, snapshot) {
         //データ読み込み中
-        if(!snapshot.hasData){
+        if (!snapshot.hasData) {
           return Container(
             margin: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(8),
               border: isToday
-                ? Border.all(color: Theme.of(context).colorScheme.primary,width:3)
-                : null,
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
+                    )
+                  : null,
             ),
             child: Center(child: Text('$day')),
           );
         }
 
-        final rate=snapshot.data!;
-        final color=_getHeatColor(rate);
-        final scheme=Theme.of(context).colorScheme;
+        final rate = snapshot.data!;
+        final color = _getHeatColor(rate);
+        final scheme = Theme.of(context).colorScheme;
 
         return Container(
           margin: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
+            gradient: rate >= 1.0 ? glowingGoldGradient : null,
+            color: rate < 1.0 ? color : null,
+            borderRadius: BorderRadius.circular(10),
             border: isToday
-              ? Border.all(color:scheme.primary,width:3)
-              : null,
+                ? Border.all(color: scheme.primary, width: 3)
+                : null,
           ),
           child: Center(
             child: Text(
@@ -335,16 +338,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         );
-      }
+      },
     );
   }
 
   //今日かどうかを判定するbool文
-  bool _isToday(DateTime date){
-    final now=DateTime.now();
-    return date.year==now.year &&
-          date.month==now.month &&
-          date.day==now.day;
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   //凡例
@@ -357,10 +360,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           children: [
             const Text(
               "達成率の凡例",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             _buildTodayCompletionRate(),
@@ -378,16 +378,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率表示を構築
-  Widget _buildTodayCompletionRate(){ 
+  Widget _buildTodayCompletionRate() {
     //今日の達成率を表示するやつ(デバッグ用)
     //FutureBuilder:非同期処理が完了するまで待ち、その後に特定のウィジェットを構築
     return FutureBuilder<double>(
       key: ValueKey('today-rate-$_rebuildKey'),
       future: _getTodayCompletionRate(),
       //snapshot:非同期プログラミングやウィジェットの状態の変更を監視する
-      builder: (context,snapshot){
+      builder: (context, snapshot) {
         //connectionState:非同期操作の状態
-        if(snapshot.connectionState==ConnectionState.waiting){
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
             width: 16,
             height: 16,
@@ -395,38 +395,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
           );
         }
 
-        if(snapshot.hasError){
+        if (snapshot.hasError) {
           return const Text(
             "エラー",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.red,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.red),
           );
         }
 
-        final rate=snapshot.data ?? 0.0;
-        final percentage=(rate*100).toInt();
+        final rate = snapshot.data ?? 0.0;
+        final percentage = (rate * 100).toInt();
 
         return Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 6,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: _getHeatColor(rate),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade300,
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
           ),
-          child:Text(
+          child: Text(
             "今日: $percentage%",
             style: TextStyle(
-              color: rate>0.0
-                ? Colors.black
-                : Theme.of(context).colorScheme.onSurface,
+              color: rate > 0.0
+                  ? Colors.black
+                  : Theme.of(context).colorScheme.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -457,4 +448,3 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 }
-
