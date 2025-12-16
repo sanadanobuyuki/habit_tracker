@@ -93,6 +93,7 @@ class Habit {
     } catch (e) {
       // パースエラーが発生した場合は空のリストを返す
       // これによりアプリが落ちるのを防ぐ
+      // ignore: avoid_print
       print('frequency パースエラー: $daysOfWeek, $e');
       return [];
     }
