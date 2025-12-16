@@ -156,6 +156,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (rate <= 0.2) return Colors.red.shade100;
     if (rate <= 0.4) return Colors.orange.shade200;
     if (rate <= 0.6) return Colors.yellow.shade400;
+    if (rate <= 0.8) return  Colors.lightGreen.shade500;
     if (rate < 1.0) return Colors.green.shade500;
     return const Color(0xFFD4AF37); // 100%
   }
@@ -169,9 +170,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率を取得（デバッグ用）
-  double _getTodayCompletionRate(){
-    return _getCompletionRate(DateTime.now()) ?? 0.0;
-  }
+  // double _getTodayCompletionRate(){
+  //   return _getCompletionRate(DateTime.now()) ?? 0.0;
+  // }
 
   //日付をYYYY-MM-DD形式に変換
   String _formatDate(DateTime date) {
@@ -183,35 +184,109 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _showLegendDialog(){
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("達成率の凡例"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLegendItem("未記録", Colors.grey.shade200),
-              _buildLegendItem("～20%", Colors.red.shade100),
-              _buildLegendItem("21～40%", Colors.orange.shade200),
-              _buildLegendItem("41～60%", Colors.yellow.shade400),
-              _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-              _buildLegendItem("81～99%", Colors.green.shade500),
-              _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
-            ],
-          ),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              "閉じる",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha:0.95),
+              ],
             ),
           ),
-        ],
+          child:SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                //ヘッダー部分
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primaryContainer,
+                        Theme.of(context).colorScheme.secondaryContainer,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.palette_outlined,
+                        size:28,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "達成率の凡例",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                //コンテンツ部分
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // _buildTodayCompletionRate(),
+                      // const SizedBox(height: 20),
+
+                      //凡例リスト
+                      _buildLegendItem("未記録", Colors.grey.shade200),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("～20%", Colors.red.shade100),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("21～40%", Colors.orange.shade200),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("41～60%", Colors.yellow.shade400),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("81～99%", Colors.green.shade500),
+                      const SizedBox(height: 8),
+                      _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+
+                      const SizedBox(height: 20),
+
+                      //閉じるボタン
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.check),
+                        label: Text("閉じる"),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -445,57 +520,98 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率表示を構築
-  Widget _buildTodayCompletionRate() {
-    //今日の達成率を表示するやつ(デバッグ用)
-    final rate=_getTodayCompletionRate();
-    final percentage=(rate*100).toInt();
+  // Widget _buildTodayCompletionRate() {
+  //   //今日の達成率を表示するやつ(デバッグ用)
+  //   final rate=_getTodayCompletionRate();
+  //   final percentage=(rate*100).toInt();
 
-    final bool isPerfect= rate >= 1.0;
+  //   final bool isPerfect= rate >= 1.0;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        gradient: isPerfect ? _glowingGoldGradient:null,
-        color: isPerfect ? null : _getHeatColor(rate),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
-      ),
-      child: Text(
-        "今日: $percentage%",
-        style: TextStyle(
-          color: rate > 0.0
-            ? Colors.black
-            :Theme.of(context).colorScheme.onSurface,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: 12,
+  //       vertical: 6,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       gradient: isPerfect ? _glowingGoldGradient:null,
+  //       color: isPerfect ? null : _getHeatColor(rate),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: Colors.grey.shade300,
+  //         width: 1,
+  //       ),
+  //     ),
+  //     child: Text(
+  //       "今日: $percentage%",
+  //       style: TextStyle(
+  //         color: rate > 0.0
+  //           ? Colors.black
+  //           :Theme.of(context).colorScheme.onSurface,
+  //         fontSize: 14,
+  //         fontWeight: FontWeight.bold,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   //凡例の各項目を構築
-  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient, IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration:BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
-            width: 24,
-            height: 24,
+            //色サンプル
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               gradient: gradient,
               color: gradient==null ? color : null,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Text(label),
+          const SizedBox(width: 12),
+
+          //ラベル
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+
+          //アイコン
+          if(icon != null)
+            Icon(
+              icon,
+              size: 24,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+            ),
         ],
       ),
     );
