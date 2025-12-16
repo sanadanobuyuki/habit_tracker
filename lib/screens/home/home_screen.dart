@@ -3,6 +3,7 @@ import '../../models/habit.dart';
 import '../../controllers/habit_controller.dart';
 import '../../widgets/habit_card.dart';
 import 'add_habit.dart';
+import 'edit_habit.dart';
 
 /// HomeScreen クラス
 ///
@@ -30,6 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // 今日の達成記録を保存する Map
   // キー: habit_id, 値: 達成フラグ(0=未達成, 1=達成)
   Map<String, int> _todayRecords = {};
+
+  // 連続達成回数を保存する Map
+  // キー: habit_id, 値: 連続達成日数
+  final Map<String, int> _streakCounts = {};
 
   @override
   void initState() {
@@ -176,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // habit.frequency は Habit モデルの getter で、
         // daysOfWeek 文字列（例: "1,3,5"）を List<int>（例: [1,3,5]）に変換する
         // null の場合は空のリスト [] を返す
-        final frequency = habit.frequency ?? [];
+        final frequency = habit.frequency;
 
         // 空のリストまたはnullの場合は毎日対象とする
         // contains(today) で今日の曜日が含まれているかチェック
@@ -197,6 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } catch (e) {
         // エラーが発生した場合は今日の未達成に入れる
         // これによりアプリが落ちるのを防ぐ
+        // ignore: avoid_print
         print('グループ分けエラー: ${habit.name}, $e');
         incomplete.add(habit);
       }
@@ -206,8 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       notToday.sort((a, b) {
         // 各習慣の最初の曜日で比較
-        final aFrequency = a.frequency ?? [];
-        final bFrequency = b.frequency ?? [];
+        final aFrequency = a.frequency;
+        final bFrequency = b.frequency;
         // 空のリストの場合は 8 を使う（日曜日の次 = 最後に表示）
         final aFirstDay = aFrequency.isNotEmpty ? aFrequency.first : 8;
         final bFirstDay = bFrequency.isNotEmpty ? bFrequency.first : 8;
@@ -215,6 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return aFirstDay.compareTo(bFirstDay);
       });
     } catch (e) {
+      // ignore: avoid_print
       print('ソートエラー: $e');
       // ソートに失敗しても続行（順番が変わらないだけ）
     }
@@ -394,10 +401,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// ウィジェット化することで、コードが見やすくなり、再利用もできる
   Widget _buildHabitCardWidget(Habit habit) {
     final completedStatus = _todayRecords[habit.id] ?? 0;
+    final streakCount = _streakCounts[habit.id] ?? 0;
 
     return HabitCard(
       habit: habit,
       completedStatus: completedStatus,
+      streakCount: streakCount,
       // onTap = カードをタップしたときの処理
       onTap: () => _toggleHabitCompletion(habit),
       // onDeleteConfirm = スワイプして削除確認が必要なときの処理
@@ -409,6 +418,20 @@ class _HomeScreenState extends State<HomeScreen> {
           await _deleteHabit(habit);
         }
         return confirmed;
+      },
+      // onEdit = 編集画面への遷移処理（新規追加）
+      onEdit: () async {
+        // 編集画面へ遷移
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => EditHabit(habit: habit)),
+        );
+
+        // 編集から戻ってきた場合、result が true なら更新があった
+        // リストを再読み込みして最新の状態を表示
+        if (result == true) {
+          await _loadHabits();
+        }
       },
     );
   }

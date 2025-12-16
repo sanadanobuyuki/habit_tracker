@@ -13,15 +13,19 @@ import '../models/habit.dart';
 class HabitCard extends StatelessWidget {
   final Habit habit;
   final int completedStatus; // 0 = 未達成, 1 = 達成
+  final int streakCount;
   final VoidCallback onTap;
   final Future<bool> Function() onDeleteConfirm;
+  final VoidCallback onEdit;
 
   const HabitCard({
     super.key,
     required this.habit,
     required this.completedStatus,
+    required this.streakCount,
     required this.onTap,
     required this.onDeleteConfirm,
+    required this.onEdit,
   });
 
   @override
@@ -37,11 +41,25 @@ class HabitCard extends StatelessWidget {
       // key = 各カードを識別するための一意のキー
       key: Key(habit.id),
       // direction = スワイプ可能な方向
-      direction: DismissDirection.endToStart,
-      // background = スワイプ時に表示される背景
-      background: _buildDismissBackground(),
-      // confirmDismiss = スワイプで削除する前に確認ダイアログを表示
-      confirmDismiss: (direction) => onDeleteConfirm(),
+      direction: DismissDirection.horizontal,
+      // background = 右スワイプ時に表示される背景
+      background: _buildDismissBackgroundRight(),
+      //左スワイプ時に表示される背景
+      secondaryBackground: _buildDismissBackgroundLeft(),
+      // confirmDismiss = スワイプ方向によって処理を分ける
+      // DismissDirection.endToStart = 右スワイプ（削除）
+      // DismissDirection.startToEnd = 左スワイプ（編集）
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.endToStart) {
+          // 右スワイプ → 削除確認ダイアログを表示
+          return await onDeleteConfirm();
+        } else if (direction == DismissDirection.startToEnd) {
+          // 左スワイプ → 編集画面へ遷移
+          onEdit();
+          return false; // カードは消さない（編集だけ）
+        }
+        return false;
+      },
       child: Opacity(
         // Opacity について:
         // 透明度を指定する (0.0〜1.0)
@@ -79,19 +97,33 @@ class HabitCard extends StatelessWidget {
             subtitle: _buildSubtitle(isTargetDay),
 
             // trailing = 右側に表示する要素
-            trailing: _buildTrailing(isCompleted, isTargetDay),
+            trailing: _buildTrailing(context, isCompleted, isTargetDay),
           ),
         ),
       ),
     );
   }
 
-  /// スワイプ時の背景
+  /// 右スワイプ時の背景
   ///
   /// 右側に余白を追加
-  /// これがないとゴミ箱アイコンが端にくっついてしまう
-  /// 赤い背景とゴミ箱アイコン
-  Widget _buildDismissBackground() {
+  /// これがないとアイコンが端にくっついてしまう
+  /// 青い背景と編集アイコン
+  Widget _buildDismissBackgroundRight() {
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.only(left: 20),
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      // アイコンの表示
+      child: const Icon(Icons.edit, color: Colors.white),
+    );
+  }
+
+  /// 左スワイプ時の背景
+  Widget _buildDismissBackgroundLeft() {
     return Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 20),
@@ -136,17 +168,41 @@ class HabitCard extends StatelessWidget {
 
   /// サブタイトル部分
   Widget _buildSubtitle(bool isTargetDay) {
-    return Text(
-      isTargetDay ? '目標' : '今日は対象外',
-      style: TextStyle(
-        fontSize: 14,
-        color: isTargetDay ? Colors.grey : Colors.grey.shade400,
-      ),
-    );
+    if (!isTargetDay) {
+      // 今日は対象外の場合
+      return Text(
+        '今日は対象外',
+        style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+      );
+    }
+    // 今日が対象日の場合は連続達成回数を表示
+    if (streakCount > 0) {
+      return Row(
+        children: [
+          const Text('🔥', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 4),
+          Text(
+            '$streakCount日連続',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.orange[700],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
+    } else {
+      // 連続達成0日の場合
+      return Text('目標', style: TextStyle(fontSize: 14, color: Colors.grey));
+    }
   }
 
   /// 右側の部分
-  Widget _buildTrailing(bool isCompleted, bool isTargetDay) {
+  Widget _buildTrailing(
+    BuildContext context,
+    bool isCompleted,
+    bool isTargetDay,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -161,6 +217,17 @@ class HabitCard extends StatelessWidget {
             ),
             child: const Icon(Icons.check, color: Colors.white, size: 20),
           ),
+
+        //メニューボタン
+        //IconButton タップ可能なアイコン
+        IconButton(
+          icon: const Icon(Icons.more_vert, size: 20),
+          color: Colors.grey[600],
+          padding: EdgeInsets.zero, // パディングをゼロに
+          constraints: const BoxConstraints(), // サイズ制約を最小に
+          onPressed: () => _showMenu(context), // メニューを表示
+        ),
+
         const SizedBox(width: 8),
         // 色のバー
         Container(
@@ -175,6 +242,73 @@ class HabitCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  //メニューを表示
+  void _showMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      // shape = BottomSheet の形状（上部を丸くする）
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        // SafeArea について:
+        // 画面下部の安全領域（ホームバーなど）を確保
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // 必要最小限の高さ
+          children: [
+            // 習慣名をヘッダーとして表示
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // 絵文字
+                  Text(habit.emoji, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(width: 12),
+                  // 習慣名
+                  Expanded(
+                    child: Text(
+                      habit.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 区切り線
+            const Divider(height: 1),
+
+            // 編集メニュー
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('編集'),
+              onTap: () {
+                Navigator.pop(context); // メニューを閉じる
+                onEdit(); // 編集画面へ遷移
+              },
+            ),
+
+            // 削除メニュー
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('削除'),
+              onTap: () async {
+                Navigator.pop(context); // メニューを閉じる
+                await onDeleteConfirm(); // 削除確認ダイアログを表示
+              },
+            ),
+
+            // 下部の余白
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 }

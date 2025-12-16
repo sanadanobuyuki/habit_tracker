@@ -270,25 +270,25 @@ class DatabaseService {
   // color: 0xFF00FF,
   //);
   Future<void> updateHabit({
-    required String id, //更新する習慣のID
-    String? name, //新しい習慣名(省略可能)
-    String? emoji, //新しい絵文字(省略可能)
-    int? color, //新しい表示色(省略可能)
-    String? daysOfWeek, //新しい曜日指定(省略可能)
+    required String id, // 更新する習慣のID
+    String? name, // 新しい習慣名(省略可能)
+    String? emoji, // 新しい絵文字(省略可能)
+    int? color, // 新しい表示色(省略可能)
+    String? daysOfWeek, // 新しい曜日指定(省略可能)※今回は使わない
   }) async {
     final db = await database;
 
-    await db.update(
-      'habits',
-      {
-        'name': name,
-        'emoji': emoji,
-        'color': color,
-        'days_of_week': daysOfWeek,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    // 更新するデータを作成
+    final Map<String, dynamic> updates = {};
+
+    if (name != null) updates['name'] = name;
+    if (emoji != null) updates['emoji'] = emoji;
+    if (color != null) updates['color'] = color;
+    // 曜日は更新しない（データ整合性のため）
+    // if (daysOfWeek != null) updates['days_of_week'] = daysOfWeek;
+
+    // データベースを更新
+    await db.update('habits', updates, where: 'id = ?', whereArgs: [id]);
   }
 
   //習慣を削除する
@@ -414,21 +414,25 @@ class DatabaseService {
     final db = await database;
 
     //日付をDateTimeに変換
-    final dateTime=DateTime.parse(date);
+    final dateTime = DateTime.parse(date);
 
     //日付を[その日の終わり]のタイムスタンプに変換
-    final endOfDay=DateTime(
+    final endOfDay = DateTime(
       dateTime.year,
       dateTime.month,
       dateTime.day,
-      23,59,59,999,//23時59分59秒999ミリ秒
-    ).millisecondsSinceEpoch;//結果としてその日の最後のミリ秒まで取れる
+      23,
+      59,
+      59,
+      999, //23時59分59秒999ミリ秒
+    ).millisecondsSinceEpoch; //結果としてその日の最後のミリ秒まで取れる
 
     //曜日を取得(1=月曜、7=日曜)
-    final weekday=dateTime.weekday;
+    final weekday = dateTime.weekday;
 
     //その日の記録を取得
-    final results=await db.rawQuery('''
+    final results = await db.rawQuery(
+      '''
       SELECT 
         h.id as habit_id,
         h.days_of_week,
@@ -442,36 +446,36 @@ class DatabaseService {
       [date, endOfDay, endOfDay],
     );
 
-    if(results.isEmpty){
+    if (results.isEmpty) {
       return 0.0;
     }
 
     //曜日設定を考慮して対象の習慣をフィルタリング
-    final targetHabits=results.where((result){
-      final daysOfWeek=result['days_of_week'] as String?;
+    final targetHabits = results.where((result) {
+      final daysOfWeek = result['days_of_week'] as String?;
 
       //daysOfWeekがnullまたは空＝毎日対象
-      if(daysOfWeek==null || daysOfWeek.isEmpty){
+      if (daysOfWeek == null || daysOfWeek.isEmpty) {
         return true;
       }
 
       //カンマ区切りの文字列を分割してリストに変換
-      final days=daysOfWeek.split(',');
+      final days = daysOfWeek.split(',');
 
       //指定された曜日に含まれているかチェック
       return days.contains(weekday.toString());
     }).toList();
 
-    if(targetHabits.isEmpty){
+    if (targetHabits.isEmpty) {
       return 0.0;
     }
 
     //達成した習慣の数をカウント
     //conpletedがnullの場合は０(未達成)として扱う
-    final completedCount=targetHabits.where((result){
-      final completed=result['completed'] as int;
-      return completed==1;
-    }).length;    
+    final completedCount = targetHabits.where((result) {
+      final completed = result['completed'] as int;
+      return completed == 1;
+    }).length;
 
     //達成率を計算
     return completedCount / targetHabits.length;
@@ -749,5 +753,90 @@ class DatabaseService {
     if (_database != null) {
       await _database!.close();
     }
+  }
+
+  // 習慣の連続達成回数を取得
+  ///
+  /// 処理の流れ:
+  /// 1. 今日から過去に遡って記録をチェック
+  /// 2. 連続で達成している日数をカウント
+  /// 3. 対象外の曜日は飛ばす
+  ///
+  /// 引数:
+  /// - habitId: 習慣のID
+  ///
+  /// 戻り値:
+  /// - 連続達成回数（日数）
+  Future<int> getStreakCount(String habitId) async {
+    final db = await database;
+
+    // 習慣の情報を取得
+    final habitResult = await db.query(
+      'habits',
+      where: 'id = ?',
+      whereArgs: [habitId],
+    );
+
+    if (habitResult.isEmpty) return 0;
+
+    final daysOfWeek = habitResult.first['days_of_week'] as String?;
+
+    // 今日から過去に遡ってチェック
+    int streakCount = 0;
+    DateTime currentDate = DateTime.now();
+
+    while (true) {
+      final dateStr = _formatDate(currentDate);
+      final weekday = currentDate.weekday;
+
+      // この日が対象日かチェック
+      final isTargetDay = _isTargetDay(daysOfWeek, weekday);
+
+      if (isTargetDay) {
+        // 記録を取得
+        final recordResult = await db.query(
+          'habit_records',
+          where: 'habit_id = ? AND date = ?',
+          whereArgs: [habitId, dateStr],
+        );
+
+        if (recordResult.isEmpty) {
+          // 記録がない = 連続終了
+          break;
+        }
+
+        final completed = recordResult.first['completed'] as int;
+        if (completed == 1) {
+          // 達成している
+          streakCount++;
+        } else {
+          // 未達成 = 連続終了
+          break;
+        }
+      }
+
+      // 前日に移動
+      currentDate = currentDate.subtract(const Duration(days: 1));
+
+      // 最大100日まで遡る（無限ループ防止）
+      if (streakCount >= 100) break;
+    }
+
+    return streakCount;
+  }
+
+  /// 日付を YYYY-MM-DD 形式にフォーマット
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// 指定された曜日が対象日かチェック
+  bool _isTargetDay(String? daysOfWeek, int weekday) {
+    if (daysOfWeek == null || daysOfWeek.isEmpty) {
+      return true; // 毎日
+    }
+
+    final days = daysOfWeek.split(',');
+    return days.contains(weekday.toString());
   }
 }

@@ -4,6 +4,22 @@ import '../services/database_service.dart';
 import '../models/habit.dart';
 import '../controllers/achievement_controller.dart'; // 【追加】
 
+/// OperationResult クラス
+/// 役割:
+/// - 操作の成功/失敗を表すクラス
+/// - メッセージも一緒に返す
+class OperationResult {
+  final bool success; // 成功したかどうか
+  final String message; // 結果メッセージ
+  final int newCompleted; // 新しい達成状態（toggleHabitCompletion用）
+
+  OperationResult({
+    required this.success,
+    required this.message,
+    this.newCompleted = 0,
+  });
+}
+
 /// HabitController
 ///
 /// 役割:
@@ -12,8 +28,38 @@ import '../controllers/achievement_controller.dart'; // 【追加】
 /// - 習慣達成時に実績チェックを実行 【追加】
 class HabitController {
   final DatabaseService _db = DatabaseService();
-  final AchievementController _achievementController =
-      AchievementController(); // 【追加】
+
+  Future<OperationResult> updateHabit({
+    required String id,
+    required String name,
+    required String emoji,
+    required int color,
+  }) async {
+    try {
+      // バリデーション: 習慣名が空でないかチェック
+      if (name.trim().isEmpty) {
+        return OperationResult(success: false, message: '習慣名を入力してください');
+      }
+
+      // バリデーション: 習慣名が長すぎないかチェック
+      if (name.length > 30) {
+        return OperationResult(success: false, message: '習慣名は30文字以内で入力してください');
+      }
+
+      // DatabaseService で習慣を更新
+      await _db.updateHabit(id: id, name: name, emoji: emoji, color: color);
+
+      // 成功を返す
+      return OperationResult(success: true, message: '習慣を更新しました');
+    } catch (e) {
+      // エラーが発生した場合
+      // ignore: avoid_print
+      print('習慣の更新エラー: $e');
+      return OperationResult(success: false, message: '更新中にエラーが発生しました: $e');
+    }
+  }
+
+  final AchievementController _achievementController = AchievementController();
 
   /// 習慣を読み込む
   ///
@@ -26,7 +72,13 @@ class HabitController {
   /// - habits: 習慣のリスト
   // ignore: unintended_html_in_doc_comment
   /// - todayRecords: 今日の達成記録 Map<habit_id, completed>
-  Future<({List<Habit> habits, Map<String, int> todayRecords})>
+  Future<
+    ({
+      List<Habit> habits,
+      Map<String, int> todayRecords,
+      Map<String, int> streakCounts,
+    })
+  >
   loadHabits() async {
     // データベースサービスのインスタンスを作成
     // データベースからすべての習慣を取得
@@ -48,7 +100,18 @@ class HabitController {
           record['completed'] as int? ?? 0;
     }
 
-    return (habits: habits, todayRecords: todayRecords);
+    // 連続達成回数を取得
+    final streakCounts = <String, int>{};
+    for (final habit in habits) {
+      final streak = await _db.getStreakCount(habit.id);
+      streakCounts[habit.id] = streak;
+    }
+
+    return (
+      habits: habits,
+      todayRecords: todayRecords,
+      streakCounts: streakCounts,
+    );
   }
 
   /// 習慣の達成状態を切り替える【実績チェック追加版】
@@ -107,7 +170,7 @@ class HabitController {
         );
       }
 
-      // ========== 【追加】実績チェック ==========
+      // ========== 実績チェック ==========
       final unlockedAchievements = <dynamic>[];
 
       if (newCompleted == 1) {
