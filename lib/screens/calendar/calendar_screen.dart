@@ -20,8 +20,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //初回読み込みが完了したかどうか
   bool _hasLoadedOnce = false;
 
-  //再描画を強制するためのキー
-  int _rebuildKey = 0;
+  //達成率データをキャッシュ
+  Map<String , double> _completionRateCache={};
+  //キャッシュの原理
+  //非同期処理を事前に完了させ、画像描画時は同期的にメモリから取得
+
+  //ローディング状態
+  bool _isLoading=false;
+
+   //金色のグラデーション定義
+  final LinearGradient _glowingGoldGradient = const LinearGradient(
+    //begin グラデーションを始める位置
+    begin: Alignment.topLeft,
+    //end グラデーションを終える位置
+    end: Alignment.bottomRight,
+    //stops グラデーションの各色が始まる位置を0.0から1.0の範囲で指定
+    stops: [0.0, 0.45, 0.7, 1.0],
+    colors: [
+      Color(0xFFFFF8E1), // 強いハイライト（光）
+      Color(0xFFFFE082), // 明るい金
+      Color(0xFFD4AF37), // ベース金
+      Color(0xFFB8962E), // 影
+    ],
+  );
 
   @override
   void initState() {
@@ -44,11 +65,40 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //表示中の月の全日付をループ
   //各日付の達成率を計算(データベース側で実行)
-  //_rebuildKeyを更新してFutureBuilderに再計算を促す
+  //先に全データを取得してメモリに保存
   Future<void> _loadMonthRecord() async {
-    //_rebuildKeyをインクリメントして、すべてのFutureBuilderを再実行
+    //ロード中なら何もしない
+    if(_isLoading) return;
+
+    setState(()=> _isLoading=true);
+
+    //月の最初の日
+    final lastDay=DateTime(_currentMonth.year,_currentMonth.month+1,0);
+
+    //新しいキャッシュを作成
+    final newCache=<String,double>{};
+
+    //各日付の達成率を取得
+    //その月のすべての日付の達成率を一度に取得
+    for(int day=1;day<=lastDay.day;day++){
+      final date=DateTime(_currentMonth.year,_currentMonth.month,day);
+      final dateString=_formatDate(date);
+
+      //達成率を取得してキャッシュに保存
+      final rate=await _db.getCompletionRateForDate(dateString);
+
+      //メモリに保存
+      newCache[dateString]=rate;
+    }
+
     if (mounted) {
-      setState(() => _rebuildKey++);
+      setState((){
+
+        //一度に反映するからちらつかない
+        _completionRateCache=newCache;
+
+        _isLoading=false;
+      });
     }
   }
 
@@ -58,6 +108,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (!mounted) return;
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+
+      //キャッシュをクリア
+      _completionRateCache.clear();
     });
 
     //記録を再読み込み
@@ -69,6 +122,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (!mounted) return;
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+
+      //キャッシュをクリア
+      _completionRateCache.clear();
     });
 
     //記録を再読み込み
@@ -80,6 +136,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (!mounted) return;
     setState(() {
       _currentMonth = DateTime.now();
+
+      //キャッシュをクリア
+      _completionRateCache.clear();
     });
 
     //記録を再読み込み
@@ -101,33 +160,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return const Color(0xFFD4AF37); // 100%
   }
 
-  //金色のグラデーション定義
-  LinearGradient glowingGoldGradient = LinearGradient(
-    //begin グラデーションを始める位置
-    begin: Alignment.topLeft,
-    //end グラデーションを終える位置
-    end: Alignment.bottomRight,
-    //stops グラデーションの各色が始まる位置を0.0から1.0の範囲で指定
-    stops: [0.0, 0.45, 0.7, 1.0],
-    colors: [
-      Color(0xFFFFF8E1), // 強いハイライト（光）
-      Color(0xFFFFE082), // 明るい金
-      Color(0xFFD4AF37), // ベース金
-      Color(0xFFB8962E), // 影
-    ],
-  );
-
   //指定日の達成率を取得
-  Future<double> _getCompletionRate(DateTime date) async {
+  double? _getCompletionRate(DateTime date){
     final dateString = _formatDate(date);
 
     //データベースから直接達成率を取得
-    return await _db.getCompletionRateForDate(dateString);
+    return _completionRateCache[dateString];
   }
 
   //今日の達成率を取得（デバッグ用）
-  Future<double> _getTodayCompletionRate() async {
-    return await _getCompletionRate(DateTime.now());
+  double _getTodayCompletionRate(){
+    return _getCompletionRate(DateTime.now()) ?? 0.0;
   }
 
   //日付をYYYY-MM-DD形式に変換
@@ -135,6 +178,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return '${date.year}-'
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void _showLegendDialog(){
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("達成率の凡例"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLegendItem("未記録", Colors.grey.shade200),
+              _buildLegendItem("～20%", Colors.red.shade100),
+              _buildLegendItem("21～40%", Colors.orange.shade200),
+              _buildLegendItem("41～60%", Colors.yellow.shade400),
+              _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+              _buildLegendItem("81～99%", Colors.green.shade500),
+              _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              "閉じる",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   //============================================================================================================
@@ -160,6 +239,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return AppBar(
       title: const Text("カレンダー"),
       actions: [
+        //凡例表示
+        IconButton(
+          onPressed: _showLegendDialog,
+          icon: const Icon(Icons.help_outline),
+          tooltip: "凡例を表示",
+        ),
+
         //今月に戻るボタン
         IconButton(
           onPressed: _goToToday,
@@ -187,9 +273,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           //カレンダー本体
           _buildCalendar(),
           const SizedBox(height: 24),
-
-          //凡例
-          _buildLegend(),
         ],
       ),
     );
@@ -291,58 +374,65 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //日付セルを構築
+  //セル描画時はメモリから即座に取得
   Widget _buildDateCell(DateTime date, int day) {
     //今日かどうかを判定
     final isToday = _isToday(date);
 
-    return FutureBuilder<double>(
-      key: ValueKey('$_rebuildKey-${_formatDate(date)}'),
-      future: _getCompletionRate(date),
-      builder: (context, snapshot) {
-        //データ読み込み中
-        if (!snapshot.hasData) {
-          return Container(
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-              border: isToday
-                  ? Border.all(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 3,
-                    )
-                  : null,
-            ),
-            child: Center(child: Text('$day')),
-          );
-        }
+    //キャッシュから達成率を取得
+    //今日の達成率をデータベースから直接取得
+    final rate = _getCompletionRate(date);
+    final scheme=Theme.of(context).colorScheme;
 
-        final rate = snapshot.data!;
-        final color = _getHeatColor(rate);
-        final scheme = Theme.of(context).colorScheme;
-
-        return Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            //達成率が100%ならグラデーション、それ以外は単色
-            gradient: rate >= 1.0 ? glowingGoldGradient : null,
-            color: rate < 1.0 ? color : null,
-            borderRadius: BorderRadius.circular(10),
-            border: isToday
-                ? Border.all(color: scheme.primary, width: 3)
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              '$day',
-              style: TextStyle(
-                color: rate > 0.0 ? Colors.black : scheme.onSurface,
-                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-              ),
+    //達成率がまだロードされていない場合
+    if(rate==null){
+      return Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: isToday
+            ? Border.all(color: scheme.primary,width: 3)
+            : null,
+        ),
+        child: Center(
+          child: Text(
+            "$day",
+            style: TextStyle(
+              color: scheme.onSurface,
+              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
             ),
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    //達成率がロード済みの場合
+    final color=_getHeatColor(rate);
+
+    //100%達成の場合はグラデーションを適用
+    final bool isPerfect=rate>=1.0;
+
+    return Container(
+      margin: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        //100%の時はグラデーション、それ以外は単色
+        gradient: isPerfect ? _glowingGoldGradient:null,
+        color: isPerfect ? null : color,
+        borderRadius: BorderRadius.circular(8),
+        border: isToday
+          ? Border.all(color: scheme.primary,width: 3)
+          : null,
+      ),
+      child: Center(
+        child: Text(
+          "$day",
+          style: TextStyle(
+            color: rate > 0.0 ? Colors.black : scheme.onSurface,
+            fontWeight:  isToday ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 
@@ -354,85 +444,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
         date.day == now.day;
   }
 
-  //凡例
-  Widget _buildLegend() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "達成率の凡例",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildTodayCompletionRate(),
-            const SizedBox(height: 12),
-            _buildLegendItem("未記録", Colors.grey.shade200),
-            _buildLegendItem("～20%", Colors.red.shade100),
-            _buildLegendItem("21～40%", Colors.orange.shade200),
-            _buildLegendItem("41～60%", Colors.yellow.shade400),
-            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-            _buildLegendItem("81～100%", Colors.green.shade500),
-          ],
+  //今日の達成率表示を構築
+  Widget _buildTodayCompletionRate() {
+    //今日の達成率を表示するやつ(デバッグ用)
+    final rate=_getTodayCompletionRate();
+    final percentage=(rate*100).toInt();
+
+    final bool isPerfect= rate >= 1.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        gradient: isPerfect ? _glowingGoldGradient:null,
+        color: isPerfect ? null : _getHeatColor(rate),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        "今日: $percentage%",
+        style: TextStyle(
+          color: rate > 0.0
+            ? Colors.black
+            :Theme.of(context).colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  //今日の達成率表示を構築
-  Widget _buildTodayCompletionRate() {
-    //今日の達成率を表示するやつ(デバッグ用)
-    //FutureBuilder:非同期処理が完了するまで待ち、その後に特定のウィジェットを構築
-    return FutureBuilder<double>(
-      key: ValueKey('today-rate-$_rebuildKey'),
-      future: _getTodayCompletionRate(),
-      //snapshot:非同期プログラミングやウィジェットの状態の変更を監視する
-      builder: (context, snapshot) {
-        //connectionState:非同期操作の状態
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return const Text(
-            "エラー",
-            style: TextStyle(fontSize: 14, color: Colors.red),
-          );
-        }
-
-        final rate = snapshot.data ?? 0.0;
-        final percentage = (rate * 100).toInt();
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: _getHeatColor(rate),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, width: 1),
-          ),
-          child: Text(
-            "今日: $percentage%",
-            style: TextStyle(
-              color: rate > 0.0
-                  ? Colors.black
-                  : Theme.of(context).colorScheme.onSurface,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   //凡例の各項目を構築
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -441,7 +489,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: color,
+              gradient: gradient,
+              color: gradient==null ? color : null,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
