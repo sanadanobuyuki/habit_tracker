@@ -39,8 +39,8 @@ _loadInitial()
 Future<void> _loadInitial() async {
   await _loadMonthRecord();//月の記録を読み込む
   if(mounted){
-    setState(()　=> _hasLoadedOnce = true); //読み込み完了フラグを立てる
-　}
+    setState(() => _hasLoadedOnce = true); //読み込み完了フラグを立てる
+ }
 }
 
 //月の記録を読み込む
@@ -300,6 +300,71 @@ VisibilityDetectorが検知
 自動的にデータを再読み込み
     ↓
 最新の達成率が表示される
+
+9.凡例------------------------------------------------------------------------------------------
+
+//凡例
+  Widget _buildLegend() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "達成率の凡例",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _buildTodayCompletionRate(),
+            const SizedBox(height: 12),
+            _buildLegendItem("未記録", Colors.grey.shade200),
+            _buildLegendItem("～20%", Colors.red.shade100),
+            _buildLegendItem("21～40%", Colors.orange.shade200),
+            _buildLegendItem("41～60%", Colors.yellow.shade400),
+            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+            _buildLegendItem("81～99%", Colors.green.shade500),
+            _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+          ],
+        ),
+      ),
+    );
+  }
+
+//凡例の各項目を構築
+  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              color: gradient==null ? color : null,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
+  _buildLegendItemの引数のところで{Gradient? gradient}を記述することで
+  凡例の項目のなかでもグラデーションを使用できる
+  {}に囲われているのは
+  "名前付きオプションパラメータ"(
+    ・{}で囲む
+    ・パラメータ名を指定して渡す(gradient:_glowingGoldGradient)
+    ・省略可能
+    ・順番は関係ない
+  )だから
+
+  このほかにも[Color? color]のように[]で囲む
+  位置オプションパラメータが存在する
 
 終.まとめ----------------------------------------------------------------------------------------
 

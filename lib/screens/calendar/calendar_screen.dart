@@ -424,7 +424,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _buildLegendItem("21～40%", Colors.orange.shade200),
             _buildLegendItem("41～60%", Colors.yellow.shade400),
             _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-            _buildLegendItem("81～100%", Colors.green.shade500),
+            _buildLegendItem("81～99%", Colors.green.shade500),
+            _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
           ],
         ),
       ),
@@ -437,13 +438,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final rate=_getTodayCompletionRate();
     final percentage=(rate*100).toInt();
 
+    final bool isPerfect= rate >= 1.0;
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: _getHeatColor(rate),
+        gradient: isPerfect ? _glowingGoldGradient:null,
+        color: isPerfect ? null : _getHeatColor(rate),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.grey.shade300,
@@ -453,7 +457,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       child: Text(
         "今日: $percentage%",
         style: TextStyle(
-          color: rate > 0/0
+          color: rate > 0.0
             ? Colors.black
             :Theme.of(context).colorScheme.onSurface,
           fontSize: 14,
@@ -464,7 +468,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //凡例の各項目を構築
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -473,7 +477,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: color,
+              gradient: gradient,
+              color: gradient==null ? color : null,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
