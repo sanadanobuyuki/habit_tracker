@@ -180,6 +180,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
         '${date.day.toString().padLeft(2, '0')}';
   }
 
+  void _showLegendDialog(){
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("達成率の凡例"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLegendItem("未記録", Colors.grey.shade200),
+              _buildLegendItem("～20%", Colors.red.shade100),
+              _buildLegendItem("21～40%", Colors.orange.shade200),
+              _buildLegendItem("41～60%", Colors.yellow.shade400),
+              _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+              _buildLegendItem("81～99%", Colors.green.shade500),
+              _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              "閉じる",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   //============================================================================================================
 
   //UI構築
@@ -203,6 +239,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return AppBar(
       title: const Text("カレンダー"),
       actions: [
+        //凡例表示
+        IconButton(
+          onPressed: _showLegendDialog,
+          icon: const Icon(Icons.help_outline),
+          tooltip: "凡例を表示",
+        ),
+
         //今月に戻るボタン
         IconButton(
           onPressed: _goToToday,
@@ -230,9 +273,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           //カレンダー本体
           _buildCalendar(),
           const SizedBox(height: 24),
-
-          //凡例
-          _buildLegend(),
         ],
       ),
     );
@@ -402,34 +442,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
-  }
-
-  //凡例
-  Widget _buildLegend() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "達成率の凡例",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildTodayCompletionRate(),
-            const SizedBox(height: 12),
-            _buildLegendItem("未記録", Colors.grey.shade200),
-            _buildLegendItem("～20%", Colors.red.shade100),
-            _buildLegendItem("21～40%", Colors.orange.shade200),
-            _buildLegendItem("41～60%", Colors.yellow.shade400),
-            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-            _buildLegendItem("81～99%", Colors.green.shade500),
-            _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
-          ],
-        ),
-      ),
-    );
   }
 
   //今日の達成率表示を構築
