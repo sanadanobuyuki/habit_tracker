@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/habit.dart';
 import '../../controllers/habit_controller.dart';
 import '../../widgets/habit_card.dart';
+import '../../widgets/completion_rate_card.dart';
 import 'add_habit.dart';
 import 'edit_habit.dart';
 
@@ -10,7 +11,7 @@ import 'edit_habit.dart';
 /// 役割:
 /// - アプリのホーム画面を表示する
 /// - 習慣リストをグループ別に表示
-/// - 習慣の追加・削除・達成状態の切り替え
+/// - 習慣の追加・削除・編集・達成状態の切り替え
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -34,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 連続達成回数を保存する Map
   // キー: habit_id, 値: 連続達成日数
-  final Map<String, int> _streakCounts = {};
+  Map<String, int> _streakCounts = {};
 
   @override
   void initState() {
@@ -46,18 +47,19 @@ class _HomeScreenState extends State<HomeScreen> {
   ///
   /// 処理の流れ:
   /// 1. HabitControllerを使ってデータを取得
-  /// 2. 習慣リストと今日の達成記録を取得
+  /// 2. 習慣リスト、今日の達成記録、連続達成回数を取得
   /// 3. 画面を更新
   Future<void> _loadHabits() async {
     setState(() => _isLoading = true);
 
-    // HabitControllerから習慣データと今日の記録を取得
+    // HabitControllerから習慣データと今日の記録と連続達成回数を取得
     final result = await _controller.loadHabits();
 
     // 画面を更新
     setState(() {
       _habits = result.habits;
       _todayRecords = result.todayRecords;
+      _streakCounts = result.streakCounts; // 追加
       _isLoading = false;
     });
   }
@@ -300,8 +302,10 @@ class _HomeScreenState extends State<HomeScreen> {
   ///
   /// 処理の流れ:
   /// 1. _groupHabits() で習慣を3つのグループに分類
-  /// 2. 各グループが空でなければヘッダーと習慣カードを表示
-  /// 3. 表示順序: 今日の未達成 → 達成済み → 今日は対象外
+  /// 2. 今日の達成率を計算
+  /// 3. 達成率カードを表示
+  /// 4. 各グループが空でなければヘッダーと習慣カードを表示
+  /// 5. 表示順序: 達成率カード → 今日の未達成 → 達成済み → 今日は対象外
   ///
   /// ListView について:
   /// children に直接ウィジェットのリストを渡す方式
@@ -314,10 +318,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final completed = groups['completed']!;
     final notToday = groups['notToday']!;
 
+    // 今日の達成率を計算
+    final totalToday = incomplete.length + completed.length;
+    final completionRate = totalToday > 0 ? completed.length / totalToday : 0.0;
+    final colorScheme = Theme.of(context).colorScheme;
     return ListView(
       // padding = リスト全体の余白
       padding: const EdgeInsets.all(16),
       children: [
+        // 達成率カード（新規追加）
+        if (totalToday > 0)
+          CompletionRateCard(
+            completionRate: completionRate,
+            completedCount: completed.length,
+            totalCount: totalToday,
+          ),
+
         // 1. 今日の未達成の習慣
         // if と ... を組み合わせた条件付き表示
         // グループが空でなければヘッダーとカードを表示
@@ -362,10 +378,10 @@ class _HomeScreenState extends State<HomeScreen> {
           // グループタイトル
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 8), // タイトルとバッジの間の余白
@@ -373,15 +389,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '$count',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.black54,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -393,9 +409,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// HabitCardウィジェットを作成
   ///
   /// 処理の流れ:
-  /// 1. 習慣の達成状態を取得
+  /// 1. 習慣の達成状態と連続達成回数を取得
   /// 2. HabitCard ウィジェットを作成
-  /// 3. タップ時とスワイプ削除時の処理を設定
+  /// 3. タップ時、スワイプ削除時、編集時の処理を設定
   ///
   /// HabitCard について:
   /// ウィジェット化することで、コードが見やすくなり、再利用もできる

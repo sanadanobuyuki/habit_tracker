@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/habit.dart';
 import '../../controllers/habit_controller.dart';
+import '../../widgets/themed_scaffold.dart';
 
 /// EditHabit クラス
 ///
@@ -197,7 +198,7 @@ class _EditHabitState extends State<EditHabit> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ThemedScaffold(
       // AppBar = 画面上部のバー
       appBar: AppBar(
         title: const Text('習慣を編集'),
