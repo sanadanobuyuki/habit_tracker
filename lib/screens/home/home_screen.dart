@@ -321,7 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // 今日の達成率を計算
     final totalToday = incomplete.length + completed.length;
     final completionRate = totalToday > 0 ? completed.length / totalToday : 0.0;
-    final colorScheme = Theme.of(context).colorScheme;
     return ListView(
       // padding = リスト全体の余白
       padding: const EdgeInsets.all(16),
