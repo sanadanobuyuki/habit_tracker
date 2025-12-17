@@ -185,6 +185,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        //ダイアログ全体を角丸にする
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -209,15 +210,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                    gradient: LinearGradient( //グラデーション
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
+                        //アプリの主要な色 primary
                         Theme.of(context).colorScheme.primaryContainer,
+                        //補助的な色 secondary
                         Theme.of(context).colorScheme.secondaryContainer,
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
+                    borderRadius: const BorderRadius.only( //上部の角だけ丸くする
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
@@ -246,6 +249,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
+                    //子要素を横幅いっぱいに引き延ばす
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // _buildTodayCompletionRate(),
@@ -270,10 +274,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                       //閉じるボタン
                       FilledButton.icon(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.check),
                         label: Text("閉じる"),
                         style: FilledButton.styleFrom(
+                          //symmetric:対象的な余白
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
