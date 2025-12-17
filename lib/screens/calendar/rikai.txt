@@ -303,55 +303,182 @@ VisibilityDetectorが検知
 
 9.凡例------------------------------------------------------------------------------------------
 
-//凡例
-  Widget _buildLegend() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "達成率の凡例",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildTodayCompletionRate(),
-            const SizedBox(height: 12),
-            _buildLegendItem("未記録", Colors.grey.shade200),
-            _buildLegendItem("～20%", Colors.red.shade100),
-            _buildLegendItem("21～40%", Colors.orange.shade200),
-            _buildLegendItem("41～60%", Colors.yellow.shade400),
-            _buildLegendItem("61～80%", Colors.lightGreen.shade500),
-            _buildLegendItem("81～99%", Colors.green.shade500),
-            _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
-          ],
+//凡例 ウィジェットでカレンダーの下に配置していたがダイアログ形式を採用
+void _showLegendDialog(){
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      shape: RoundedRectangleBorder( //ダイアログ全体を角丸にする
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withValues(alpha:0.95),
+            ],
+          ),
+        ),
+        child:SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              //ヘッダー部分
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primaryContainer,
+                      Theme.of(context).colorScheme.secondaryContainer,
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.palette_outlined,
+                      size:28,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "達成率の凡例",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              //コンテンツ部分
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // _buildTodayCompletionRate(),
+                    // const SizedBox(height: 20),
+
+                    //凡例リスト
+                    _buildLegendItem("未記録", Colors.grey.shade200),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("～20%", Colors.red.shade100),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("21～40%", Colors.orange.shade200),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("41～60%", Colors.yellow.shade400),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("61～80%", Colors.lightGreen.shade500),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("81～99%", Colors.green.shade500),
+                    const SizedBox(height: 8),
+                    _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+
+                    const SizedBox(height: 20),
+
+                    //閉じるボタン
+                    FilledButton.icon( //背景色付きのボタン
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.check),
+                      label: Text("閉じる"),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
 //凡例の各項目を構築
-  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              gradient: gradient,
-              color: gradient==null ? color : null,
-              borderRadius: BorderRadius.circular(4),
+Widget _buildLegendItem(String label, Color? color,{Gradient? gradient, IconData? icon}) {
+  return Container(
+
+    //padding:内側の余白(横12、縦10)
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration:BoxDecoration(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        width: 1,
+      ),
+      boxShadow: [
+        //カードが少し浮いて見える
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05), //黒の5%透明度
+          blurRadius: 4, //ぼかし半径4ピクセル
+          offset: const Offset(0, 2), //右０，下２ピクセルずらす
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          //色サンプル
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            gradient: gradient,
+            color: gradient==null ? color : null,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        //ラベル
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      ),
-    );
-  }
+        ),
+
+        //アイコン
+        if(icon != null)
+          Icon(
+            icon,
+            size: 24,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+          ),
+      ],
+    ),
+  );
+}
 
   _buildLegendItemの引数のところで{Gradient? gradient}を記述することで
   凡例の項目のなかでもグラデーションを使用できる
@@ -365,6 +492,68 @@ VisibilityDetectorが検知
 
   このほかにも[Color? color]のように[]で囲む
   位置オプションパラメータが存在する
+
+10.使用しているコードの解説-----------------------------------------------------------------------
+
+・contextとは
+BuildContext型のオブジェクトで、ウィジェットツリー内での自分の位置情報を持っている
+context=今ここにいるという情報
+例）
+void _showLegendDialog() {
+  showDialog(
+    context: context,  // ← 1
+    builder: (context) => Dialog(  // ← 2
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,  // ← 3
+        ),
+      ),
+    ),
+  );
+}
+
+1.context:context
+右側のcontext:_CalendarScreenStateが持っているcontext
+・_showLegendDialog()メソッド内で使える
+・CalendarScreenの位置情報
+役割としては
+  このCalendarScreen上にダイアログを表示してと伝える
+
+2.builder:(context) =>
+このcontextはshowDialogが新しく作成したcontext
+  ダイアログ専用のcontext
+  ダイアログウィジェットの位置情報
+  builder関数の引数として渡される
+  1のcontextとは別物
+
+3.Theme.of(context).colorScheme.surface
+このcontextは２のダイアログのcontext(builderの引数)
+役割：このcontextを使ってテーマ情報を取得
+Theme.of(context)=このcontextから上をたどってテーマ情報を探す
+
+なぜ異なるcontextが必要なのか
+
+
+・colorSchemeについて
+1.Primary系
+colorScheme.primary //メインカラー
+colorScheme.onPrimary //primary上のテキスト・アイコン色
+colorScheme.primaryContainer //primaryの薄い背景色
+colorScheme.onPrimaryContainer //primaryContainer上のテキスト色
+
+2.Secondary
+colorScheme.secondary //補助カラー
+colorScheme.onSecondary //secondary上のテキスト色
+colorScheme.secondaryContainer //secondaryの薄い背景色
+colorScheme.onSecondaryContainer //secondaryContainer上のテキスト色
+
+3.Surface系
+colorScheme.surface //カード・ダイアログの背景色
+colorScheme.onSurface //surface上のテキスト色
+colorScheme.surfaceVariant //少し違う表面色
+colorScheme.onSurfaceVariant //surfaceVariant上のテキスト色
+
+ほかにもError系やOutline系がある
 
 終.まとめ----------------------------------------------------------------------------------------
 
