@@ -23,6 +23,9 @@ class CompletionRateCard extends StatelessWidget {
     // パーセンテージに変換（0〜100）
     final percentage = (completionRate * 100).toInt();
 
+    // 背景色に応じた文字色を取得
+    final textColor = _getTextColor(completionRate);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(24),
@@ -56,10 +59,11 @@ class CompletionRateCard extends StatelessWidget {
       child: Column(
         children: [
           // タイトル
-          const Text(
+          Text(
             '今日の達成率',
             style: TextStyle(
-              color: Colors.white,
+              // ignore: deprecated_member_use
+              color: textColor.withOpacity(0.9),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -69,8 +73,8 @@ class CompletionRateCard extends StatelessWidget {
           // パーセンテージ（大きく表示）
           Text(
             '$percentage%',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontSize: 56,
               fontWeight: FontWeight.bold,
               height: 1.0,
@@ -83,7 +87,7 @@ class CompletionRateCard extends StatelessWidget {
             '$completedCount/$totalCount 完了',
             style: TextStyle(
               // ignore: deprecated_member_use
-              color: Colors.white.withOpacity(0.9),
+              color: textColor.withOpacity(0.9),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -91,7 +95,7 @@ class CompletionRateCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // プログレスバー
-          _buildProgressBar(completionRate),
+          _buildProgressBar(completionRate, textColor),
         ],
       ),
     );
@@ -118,12 +122,14 @@ class CompletionRateCard extends StatelessWidget {
   }
 
   /// プログレスバーを作成
-  Widget _buildProgressBar(double progress) {
+  ///
+  /// 背景色に応じた色で表示
+  Widget _buildProgressBar(double progress, Color textColor) {
     return Container(
       height: 8,
       decoration: BoxDecoration(
         // ignore: deprecated_member_use
-        color: Colors.white.withOpacity(0.3),
+        color: textColor.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
       ),
       child: FractionallySizedBox(
@@ -131,12 +137,16 @@ class CompletionRateCard extends StatelessWidget {
         widthFactor: progress,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: textColor,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
       ),
     );
+  }
+
+  Color _getTextColor(double rate) {
+    return const Color(0xFF424242); // すべて濃いグレーで統一
   }
 
   /// 達成率に応じたグラデーション色1を取得
