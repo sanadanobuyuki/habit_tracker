@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 import '../../controllers/achievement_controller.dart';
 import '../../widgets/emoji_selector.dart';
 import '../../widgets/color_selector.dart';
@@ -68,7 +69,7 @@ class _AddHabitState extends State<AddHabit> {
     final daysOfWeek = _getDaysOfWeekString();
 
     //現在の日時取得
-    final now=DateTime.now();
+    final now = DateTime.now();
 
     try {
       await _db.insertHabit(
@@ -81,24 +82,25 @@ class _AddHabitState extends State<AddHabit> {
       );
 
       //今日の未達成記録を自動生成
-      final today='${now.year}-${now.month.toString().padLeft(2,'0')}-${now.day.toString().padLeft(2,'0')}';
-      final weekday=now.weekday;
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final weekday = now.weekday;
 
       //今日が対象曜日かチェック
-      bool isTargetToday=true;
-      if(daysOfWeek!=null && daysOfWeek.isNotEmpty){
-        final days=daysOfWeek.split(',');
-        isTargetToday=days.contains(weekday.toString());
+      bool isTargetToday = true;
+      if (daysOfWeek != null && daysOfWeek.isNotEmpty) {
+        final days = daysOfWeek.split(',');
+        isTargetToday = days.contains(weekday.toString());
       }
 
       //対象曜日なら未達成記録を作成
-      if(isTargetToday){
-        final recordId='record_${habitId}_${now.millisecondsSinceEpoch}';
+      if (isTargetToday) {
+        final recordId = 'record_${habitId}_${now.millisecondsSinceEpoch}';
         await _db.insertRecord(
           id: recordId,
           habitId: habitId,
-          date:today,
-          completed: 0,//未達成
+          date: today,
+          completed: 0, //未達成
           recordedAt: now.millisecondsSinceEpoch,
         );
       }
@@ -111,10 +113,10 @@ class _AddHabitState extends State<AddHabit> {
       //3.リストがからでなければ実績解除の通知を表示
       final newAchievements = await _achievementController
           .checkHabitCountAchievements();
-
+      final l10n = AppLocalizations.of(context);
       // 保存成功
       if (mounted) {
-        _showSnackBar('習慣を保存しました');
+        _showSnackBar(l10n.habitSaved); //習慣を保存しました
 
         //新しく解除された実績があれば通知
         //isNotEmpty
@@ -125,7 +127,7 @@ class _AddHabitState extends State<AddHabit> {
 
           //スナックバーで通知
           //後でダイアログに変更する
-          _showSnackBar('🎉実績解除！「${achievement.name}」');
+          _showSnackBar(l10n.achievementUnlocked(achievement.name)); //実績解除
         }
 
         Navigator.of(context).pop(); // 前の画面に戻る
@@ -144,22 +146,23 @@ class _AddHabitState extends State<AddHabit> {
   /// - true: バリデーション成功
   /// - false: バリデーション失敗
   bool _validateInput() {
+    final l10n = AppLocalizations.of(context);
     // 入力チェック
     if (_nameController.text.trim().isEmpty) {
       // SnackBar について:
       // 画面下部に一時的にメッセージを表示
-      _showSnackBar('習慣名を入力してください');
+      _showSnackBar(l10n.pleaseEnterHabitName); // 習慣名を入力してください
       return false;
     }
 
     if (_selectedEmoji.isEmpty) {
-      _showSnackBar('絵文字を選択してください');
+      _showSnackBar(l10n.pleaseSelectEmoji); // 絵文字を選択してください
       return false;
     }
 
     // 曜日指定の場合、曜日が選択されているかチェック
     if (!_isEveryDay && _selectedDays.isEmpty) {
-      _showSnackBar('曜日を選択してください');
+      _showSnackBar(l10n.pleaseSelectDays); // 曜日を選択してください
       return false;
     }
 
@@ -221,16 +224,17 @@ class _AddHabitState extends State<AddHabit> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ThemedScaffold(
       appBar: AppBar(
-        title: const Text('習慣を追加'),
+        title: Text(l10n.addHabit), // 習慣を追加
         // actions について:
         // AppBarの右側にボタンを配置
         actions: [
           TextButton(
             onPressed: _saveHabit,
             child: Text(
-              '保存',
+              l10n.save, //保存
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -290,19 +294,20 @@ class _AddHabitState extends State<AddHabit> {
 
   /// 習慣名入力フィールド
   Widget _buildNameField() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '習慣名',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.habitName, //習慣名
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _nameController,
-          decoration: const InputDecoration(
-            hintText: '例: 朝の運動',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: l10n.habitNameHint, //例: 朝の運動
+            border: const OutlineInputBorder(),
           ),
         ),
       ],
