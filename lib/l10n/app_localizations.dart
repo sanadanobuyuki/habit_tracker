@@ -138,7 +138,7 @@ class AppLocalizations {
   String get ok => locale.languageCode == 'ja' ? 'OK' : 'OK';
   String get close => locale.languageCode == 'ja' ? '閉じる' : 'Close';
 
-  // 習慣関連
+  // 習慣追加・編集画面
   String get habitName => locale.languageCode == 'ja' ? '習慣名' : 'Habit Name';
   String get habitNameHint =>
       locale.languageCode == 'ja' ? '例: 朝の運動' : 'e.g., Morning Exercise';
@@ -149,9 +149,10 @@ class AppLocalizations {
   String get everyday => locale.languageCode == 'ja' ? '毎日' : 'Everyday';
   String get selectDays =>
       locale.languageCode == 'ja' ? '曜日を選択' : 'Select Days';
-  String get daysOfWeekCannotBeChanged => locale.languageCode == 'ja'
-      ? '曜日は編集できません'
-      : 'Days of Week cannot be changed';
+  String get targetFrequency => locale.languageCode == 'ja'
+      ? '目標頻度(週あたり)'
+      : 'Target Frequency (per week)';
+  String get timesPerWeek => locale.languageCode == 'ja' ? '回' : 'times';
 
   // 曜日名
   String get monday => locale.languageCode == 'ja' ? '月' : 'Mon';
@@ -162,7 +163,7 @@ class AppLocalizations {
   String get saturday => locale.languageCode == 'ja' ? '土' : 'Sat';
   String get sunday => locale.languageCode == 'ja' ? '日' : 'Sun';
 
-  // バリデーション
+  // バリデーションメッセージ
   String get pleaseEnterHabitName => locale.languageCode == 'ja'
       ? '習慣名を入力してください'
       : 'Please enter a habit name';
@@ -170,16 +171,23 @@ class AppLocalizations {
       locale.languageCode == 'ja' ? '絵文字を選択してください' : 'Please select an emoji';
   String get pleaseSelectDays =>
       locale.languageCode == 'ja' ? '曜日を選択してください' : 'Please select days';
+  String get habitNameTooLong => locale.languageCode == 'ja'
+      ? '習慣名は30文字以内で入力してください'
+      : 'Habit name must be 30 characters or less';
 
   // 成功メッセージ
   String get habitSaved =>
       locale.languageCode == 'ja' ? '習慣を保存しました' : 'Habit saved';
+  String get habitUpdated =>
+      locale.languageCode == 'ja' ? '習慣を更新しました' : 'Habit updated';
+  String habitDeleted(String name) =>
+      locale.languageCode == 'ja' ? '「$name」を削除しました' : 'Deleted "$name"';
   String habitCompleted(String emoji, String name) =>
       locale.languageCode == 'ja'
       ? '$emoji $name を達成しました!'
       : '$emoji $name completed!';
-  String habitDeleted(String name) =>
-      locale.languageCode == 'ja' ? '「$name」を削除しました' : 'Deleted "$name"';
+  String habitUncompleted(String name) =>
+      locale.languageCode == 'ja' ? '$name の達成を取り消しました' : 'Uncompleted $name';
 
   // ホーム画面
   String get noHabitsYet =>
@@ -192,6 +200,8 @@ class AppLocalizations {
   String get completed => locale.languageCode == 'ja' ? '達成済み' : 'Completed';
   String get notTargetToday =>
       locale.languageCode == 'ja' ? '今日は対象外' : 'Not Today';
+  String get notTargetTodayDescription =>
+      locale.languageCode == 'ja' ? '今日は対象外' : 'Not scheduled for today';
   String get goal => locale.languageCode == 'ja' ? '目標' : 'Goal';
   String daysStreak(int days) =>
       locale.languageCode == 'ja' ? '$days日連続' : '$days day streak';
@@ -204,21 +214,65 @@ class AppLocalizations {
   // カレンダー画面
   String get completionRateLegend =>
       locale.languageCode == 'ja' ? '達成率の凡例' : 'Completion Rate Legend';
+  String get showLegend =>
+      locale.languageCode == 'ja' ? '凡例を表示' : 'Show Legend';
   String get backToThisMonth =>
       locale.languageCode == 'ja' ? '今月に戻る' : 'Back to This Month';
+  String get previousMonth =>
+      locale.languageCode == 'ja' ? '前月' : 'Previous Month';
+  String get nextMonth => locale.languageCode == 'ja' ? '次月' : 'Next Month';
   String get unrecorded => locale.languageCode == 'ja' ? '未記録' : 'Unrecorded';
+  String get availableThemes =>
+      locale.languageCode == 'ja' ? '利用可能なテーマ' : 'Available Themes';
+  String get lockedThemes =>
+      locale.languageCode == 'ja' ? 'ロック中のテーマ' : 'Locked Themes';
+  String get unlockByAchievement => locale.languageCode == 'ja'
+      ? '実績を解除すると使えるようになります'
+      : 'Unlock by completing achievements';
 
   // 実績画面
   String get yourAchievements =>
       locale.languageCode == 'ja' ? 'あなたの実績' : 'Your Achievements';
   String get unlocked => locale.languageCode == 'ja' ? '解除済み' : 'Unlocked';
+  String get noAchievements =>
+      locale.languageCode == 'ja' ? '実績データがありません' : 'No achievements data';
+  String unlockCondition(int value, String unit) => locale.languageCode == 'ja'
+      ? '$value$unit達成で解除'
+      : 'Unlock at $value$unit';
+  String get reward => locale.languageCode == 'ja' ? '報酬' : 'Reward';
+  String rewardTheme(String themeName) => locale.languageCode == 'ja'
+      ? '報酬: テーマ「$themeName」'
+      : 'Reward: Theme "$themeName"';
   String get receiveReward =>
       locale.languageCode == 'ja' ? '報酬を受け取る' : 'Receive Reward';
   String get alreadyReceived =>
       locale.languageCode == 'ja' ? '受け取り済み' : 'Already Received';
+  String get received =>
+      locale.languageCode == 'ja' ? '受け取り済み' : 'Already Received';
+  String get themeReceived =>
+      locale.languageCode == 'ja' ? 'テーマを受け取りました!' : 'Theme Received!';
+  String themeUnlocked(String themeName) => locale.languageCode == 'ja'
+      ? 'テーマ「$themeName」が使えるようになりました。\n設定画面から選択できます。'
+      : 'Theme "$themeName" is now available.\nYou can select it in Settings.';
+  String themeReward(String themeName) => locale.languageCode == 'ja'
+      ? '報酬: テーマ「$themeName」'
+      : 'Reward: Theme "$themeName"';
+  String get noReward => locale.languageCode == 'ja'
+      ? 'この実績には報酬がありません'
+      : 'No reward for this achievement';
+  String get rewardAlreadyReceived => locale.languageCode == 'ja'
+      ? 'この報酬はすでに受け取り済みです'
+      : 'This reward has already been received';
   String achievementUnlocked(String name) => locale.languageCode == 'ja'
       ? '🎉実績解除！「$name」'
       : '🎉Achievement Unlocked! "$name"';
+  String achievementCondition(dynamic achievement) =>
+      locale.languageCode == 'ja'
+      ? '${achievement.conditionValue}${achievement.unit}達成で解除'
+      : 'Unlock at ${achievement.conditionValue}${achievement.unit}';
+  String get availableByAchievement =>
+      locale.languageCode == 'ja' ? '実績解除で利用可能' : 'Available by achievement';
+  String get locked => locale.languageCode == 'ja' ? 'ロック中' : 'Locked';
 
   // 設定画面
   String get displaySettings =>
@@ -232,15 +286,63 @@ class AppLocalizations {
   String get appInfo =>
       locale.languageCode == 'ja' ? 'アプリ情報' : 'App Information';
   String get version => locale.languageCode == 'ja' ? 'バージョン' : 'Version';
+  String get developerOptions =>
+      locale.languageCode == 'ja' ? '開発者向け' : 'Developer Options';
+  String get resetDatabase =>
+      locale.languageCode == 'ja' ? 'データベースをリセット' : 'Reset Database';
+  String get allDataWillBeDeleted => locale.languageCode == 'ja'
+      ? '⚠️ すべてのデータが削除されます'
+      : '⚠️ All data will be deleted';
+  String get databaseReset =>
+      locale.languageCode == 'ja' ? 'データベースリセット' : 'Database Reset';
+  String get resetWarning => locale.languageCode == 'ja'
+      ? '以下のデータがすべて削除されます:'
+      : 'The following data will be deleted:';
+  String get allHabits => locale.languageCode == 'ja' ? 'すべての習慣' : 'All habits';
+  String get allRecords =>
+      locale.languageCode == 'ja' ? 'すべての記録' : 'All records';
+  String get unlockedAchievements =>
+      locale.languageCode == 'ja' ? '解除した実績' : 'Unlocked achievements';
+  String get themeSettings =>
+      locale.languageCode == 'ja' ? 'テーマ設定' : 'Theme settings';
+  String get cannotUndo => locale.languageCode == 'ja'
+      ? '⚠️ この操作は取り消せません'
+      : '⚠️ This action cannot be undone';
+  String get reset => locale.languageCode == 'ja' ? 'リセット' : 'Reset';
+  String get resetting =>
+      locale.languageCode == 'ja' ? 'データベースをリセット中...' : 'Resetting database...';
+  String get resetComplete =>
+      locale.languageCode == 'ja' ? 'リセット完了' : 'Reset Complete';
+  String get resetCompleteMessage => locale.languageCode == 'ja'
+      ? 'データベースをリセットしました。\nアプリを再起動してください。'
+      : 'Database has been reset.\nPlease restart the app.';
+  String get error => locale.languageCode == 'ja' ? 'エラー' : 'Error';
+  String resetFailed(String error) => locale.languageCode == 'ja'
+      ? 'データベースのリセットに失敗しました。\n\n$error'
+      : 'Failed to reset database.\n\n$error';
 
-  // エラー
-  String errorOccurred(String error) => locale.languageCode == 'ja'
-      ? 'エラーが発生しました: $error'
-      : 'An error occurred: $error';
+  // 編集画面
+  String get daysCannotBeChanged =>
+      locale.languageCode == 'ja' ? '曜日は変更できません' : 'Days cannot be changed';
+  String get updating => locale.languageCode == 'ja' ? '更新中...' : 'Updating...';
 
   // 削除確認
   String deleteConfirmation(String name) =>
       locale.languageCode == 'ja' ? '「$name」を削除しますか?' : 'Delete "$name"?';
+
+  // テーマ関連
+  String get themeLocked =>
+      locale.languageCode == 'ja' ? 'テーマがロックされています' : 'Theme is locked';
+  String themeLockedMessage(String themeName) => locale.languageCode == 'ja'
+      ? 'テーマ「$themeName」を使用するには、特定の実績を解除する必要があります。'
+      : 'To use theme "$themeName", you need to unlock a specific achievement.';
+
+  String get rewardReceived =>
+      locale.languageCode == 'ja' ? '報酬を受け取りました' : 'Reward Received';
+  // エラーメッセージ
+  String errorOccurred(String error) => locale.languageCode == 'ja'
+      ? 'エラーが発生しました: $error'
+      : 'An error occurred: $error';
 }
 
 /// Delegate クラス

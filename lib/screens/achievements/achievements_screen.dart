@@ -4,6 +4,7 @@ import '../../services/database_service.dart';
 import '../../models/achievement.dart';
 import '../../models/user_achievement.dart';
 import '../../providers/theme_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../widgets/themed_scaffold.dart';
 
 /// AchievementsScreen
@@ -29,6 +30,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   // ローディング中かどうか
   bool _isLoading = true;
+
+  get l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -120,16 +123,17 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     Achievement achievement,
     UserAchievement userAchievement,
   ) async {
+    final l10n = AppLocalizations.of(context);
     try {
       // theme_id がない場合は何もしない
       if (achievement.themeId == null || achievement.themeId!.isEmpty) {
-        _showSnackBar('この実績には報酬がありません');
+        _showSnackBar(l10n.noReward); //報酬がありません
         return;
       }
 
       // すでに受け取り済みか確認
       if (userAchievement.themeReceived) {
-        _showSnackBar('この報酬はすでに受け取り済みです');
+        _showSnackBar(l10n.rewardAlreadyReceived); //報酬はすでに受け取っています
         return;
       }
 
@@ -153,9 +157,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       // 成功メッセージを表示
       if (mounted) {
         _showDialog(
-          title: '🎉 テーマを受け取りました!',
-          content:
-              'テーマ「${_getThemeName(achievement.themeId!)}」が使えるようになりました。\n設定画面から選択できます。',
+          title: l10n.rewardReceived, //報酬を受け取りました
+          content: l10n.themeUnlocked(
+            _getThemeName(achievement.themeId!),
+          ), //テーマ「」の報酬を受け取りました
         );
       }
     } catch (e) {
@@ -173,12 +178,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// 戻り値:
   /// - テーマ名（見つからない場合は themeId をそのまま返す）
   String _getThemeName(String themeId) {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final theme = themeProvider.themes.firstWhere(
-      (t) => t.id == themeId,
-      orElse: () => themeProvider.themes[0],
-    );
-    return theme.name;
+    final l10n = AppLocalizations.of(context);
+    return l10n.themeName(themeId);
   }
 
   /// スナックバーを表示
@@ -214,8 +215,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ThemedScaffold(
-      appBar: AppBar(title: const Text('実績')),
+      appBar: AppBar(title: Text(l10n.achievements)), //実績
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -230,9 +232,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   /// メインコンテンツを作成
   Widget _buildContent() {
+    final l10n = AppLocalizations.of(context);
     if (_achievements.isEmpty) {
       // 実績データがない場合
-      return const Center(child: Text('実績データがありません'));
+      return Center(child: Text(l10n.noAchievements)); //実績がありません
     }
 
     return ListView(
@@ -254,6 +257,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// 解除数 / 総数を表示
   /// プログレスバーで視覚化
   Widget _buildProgressSummary() {
+    final l10n = AppLocalizations.of(context);
     final totalCount = _achievements.length;
     final unlockedCount = _userAchievements.length;
     final progress = totalCount > 0 ? unlockedCount / totalCount : 0.0;
@@ -266,13 +270,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // タイトル
-            const Row(
+            Row(
               children: [
-                Icon(Icons.emoji_events, color: Colors.orange),
-                SizedBox(width: 8),
+                const Icon(Icons.emoji_events, color: Colors.orange),
+                const SizedBox(width: 8),
                 Text(
-                  'あなたの実績',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  l10n.yourAchievements, //実績の進捗
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -281,7 +288,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
             // 解除数
             Text(
-              '解除済み: $unlockedCount / $totalCount',
+              '${l10n.unlocked}: $unlockedCount / $totalCount',
               style: const TextStyle(fontSize: 16),
             ),
 
@@ -386,7 +393,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '報酬: テーマ「${_getThemeName(achievement.themeId!)}」',
+                      l10n.themeReward(
+                        _getThemeName(achievement.themeId!),
+                      ), //報酬: テーマ「」
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -414,7 +423,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         : Icons.card_giftcard,
                   ),
                   label: Text(
-                    userAchievement.themeReceived ? '受け取り済み' : '報酬を受け取る',
+                    userAchievement.themeReceived
+                        ? l10n.received
+                        : l10n.receiveReward, //受け取り済み / 報酬を受け取る
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -477,7 +488,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         children: [
           // 実績名
           Text(
-            achievement.name,
+            l10n.achievementName(achievement.id), //実績名
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
 
@@ -485,7 +496,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
           // 説明
           Text(
-            achievement.description,
+            l10n.achievementDescription(achievement.id),
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
 
@@ -523,7 +534,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
           // ヒント
           Text(
-            '${achievement.conditionValue}${achievement.unit}達成で解除',
+            l10n.achievementCondition(achievement), //〇〇達成で解除
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],

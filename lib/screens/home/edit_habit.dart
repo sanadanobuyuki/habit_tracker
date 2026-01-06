@@ -418,7 +418,7 @@ class _EditHabitState extends State<EditHabit> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      l10n.daysOfWeekCannotBeChanged, // 曜日は編集できません
+                      l10n.daysCannotBeChanged, // 曜日は編集できません
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ),
