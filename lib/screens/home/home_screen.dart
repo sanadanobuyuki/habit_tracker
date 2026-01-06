@@ -137,21 +137,21 @@ class _HomeScreenState extends State<HomeScreen> {
           context: context,
           builder: (context) => AlertDialog(
             // タイトル
-            title: Text(l10n.deleteHabit),
+            title: Text(l10n.deleteHabit), //習慣を削除
             // 詳細
-            content: Text(l10n.deleteConfirmation(habit.name)),
+            content: Text(l10n.deleteConfirmation(habit.name)), //を削除しますか？
             actions: [
               TextButton(
                 // キャンセルボタン
                 // false を返して削除しない
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancel),
+                child: Text(l10n.cancel), //キャンセル
               ),
               TextButton(
                 // 削除ボタン
                 // true を返して削除を実行
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.delete),
+                child: Text(l10n.delete), //削除
               ),
             ],
           ),
@@ -241,8 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.appTitle)),
-
+      appBar: AppBar(title: Text(l10n.appTitle)), //ハビコツ
       // SafeArea について:
       // AppBarがある場合、body全体をSafeAreaで囲む必要はない
       // しかし、統一性のため全体を囲むこともできる
@@ -289,12 +288,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
           const SizedBox(height: 16), // 縦の余白
           Text(
-            l10n.noHabitsYet,
+            l10n.noHabitsYet, //まだ習慣がありません
             style: const TextStyle(fontSize: 18, color: Colors.grey),
           ),
           const SizedBox(height: 8),
           Text(
-            l10n.tapPlusToAdd,
+            l10n.tapPlusToAdd, //画面下の「＋」ボタンをタップして習慣を追加しましょう
             style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
@@ -342,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // if と ... を組み合わせた条件付き表示
         // グループが空でなければヘッダーとカードを表示
         if (incomplete.isNotEmpty) ...[
-          _buildGroupHeader(l10n.todaysHabits, incomplete.length),
+          _buildGroupHeader(l10n.todaysHabits, incomplete.length), //今日の習慣
           // ... はスプレッド演算子: リストの中身を展開する
           // map() で各習慣を HabitCard ウィジェットに変換
           ...incomplete.map((habit) => _buildHabitCardWidget(habit)),
@@ -351,14 +350,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 2. 今日の達成済みの習慣
         if (completed.isNotEmpty) ...[
-          _buildGroupHeader(l10n.completed, completed.length),
+          _buildGroupHeader(l10n.completed, completed.length), //達成済み
           ...completed.map((habit) => _buildHabitCardWidget(habit)),
           const SizedBox(height: 24),
         ],
 
         // 3. 今日は対象外の習慣（曜日順にソート済み）
         if (notToday.isNotEmpty) ...[
-          _buildGroupHeader(l10n.notTargetToday, notToday.length),
+          _buildGroupHeader(l10n.notTargetToday, notToday.length), //今日は対象外
           ...notToday.map((habit) => _buildHabitCardWidget(habit)),
         ],
       ],

@@ -25,22 +25,22 @@ class SettingsScreen extends StatelessWidget {
     // 多言語化テキストを取得
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settings)),
+      appBar: AppBar(title: Text(l10n.settings)), //設定
       body: ListView(
         children: [
           // テーマ設定セクション
-          _buildSectionHeader(l10n.displaySettings),
+          _buildSectionHeader(l10n.displaySettings), //表示設定
           _buildThemeListTile(context),
           _buildLanguageListTile(context),
 
           const SizedBox(height: 24),
 
           // 今後の拡張用セクション
-          _buildSectionHeader(l10n.appInfo),
+          _buildSectionHeader(l10n.appInfo), //アプリ情報
           _buildInfoListTile(
             context,
             icon: Icons.info_outline,
-            title: l10n.version,
+            title: l10n.version, //バージョン
             subtitle: '1.0.0',
             onTap: null, // タップ不可
           ),
@@ -71,11 +71,12 @@ class SettingsScreen extends StatelessWidget {
 
   /// テーマ選択のリストタイルを作成
   Widget _buildThemeListTile(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return ListTile(
           leading: const Icon(Icons.palette_outlined),
-          title: const Text('テーマ'),
+          title: Text(l10n.theme), //テーマ
           subtitle: Text(themeProvider.currentTheme.name),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
@@ -137,13 +138,13 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.language),
+        title: Text(l10n.language), //言語設定
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 日本語オプション
             RadioListTile<String>(
-              title: Text(l10n.japanese),
+              title: Text(l10n.japanese), //日本語
               value: 'ja',
               groupValue: languageProvider.languageCode,
               onChanged: (value) {
@@ -158,7 +159,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             // 英語オプション
             RadioListTile<String>(
-              title: Text(l10n.english),
+              title: Text(l10n.english), //英語
               value: 'en',
               groupValue: languageProvider.languageCode,
               onChanged: (value) {
@@ -176,7 +177,7 @@ class SettingsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.cancel),
+            child: Text(l10n.cancel), //キャンセル
           ),
         ],
       ),
