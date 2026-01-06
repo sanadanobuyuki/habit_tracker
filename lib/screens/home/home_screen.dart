@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 import '../../models/habit.dart';
 import '../../controllers/habit_controller.dart';
 import '../../widgets/habit_card.dart';
@@ -130,26 +131,27 @@ class _HomeScreenState extends State<HomeScreen> {
   /// - true: 削除を実行
   /// - false: キャンセル
   Future<bool> _showDeleteConfirmDialog(Habit habit) async {
+    final l10n = AppLocalizations.of(context);
     // 削除確認ダイアログを表示
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             // タイトル
-            title: const Text('習慣を削除'),
+            title: Text(l10n.deleteHabit), //習慣を削除
             // 詳細
-            content: Text('「${habit.name}」を削除しますか?'),
+            content: Text(l10n.deleteConfirmation(habit.name)), //を削除しますか？
             actions: [
               TextButton(
                 // キャンセルボタン
                 // false を返して削除しない
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('キャンセル'),
+                child: Text(l10n.cancel), //キャンセル
               ),
               TextButton(
                 // 削除ボタン
                 // true を返して削除を実行
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('削除'),
+                child: Text(l10n.delete), //削除
               ),
             ],
           ),
@@ -237,9 +239,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('ハビコツ')),
-
+      appBar: AppBar(title: Text(l10n.appTitle)), //ハビコツ
       // SafeArea について:
       // AppBarがある場合、body全体をSafeAreaで囲む必要はない
       // しかし、統一性のため全体を囲むこともできる
@@ -277,21 +279,22 @@ class _HomeScreenState extends State<HomeScreen> {
   /// AppBarがある場合は自動的に安全領域が確保されるため不要
   /// しかし、念のため追加しても問題ない
   Widget _buildEmptyView() {
-    return const Center(
+    final l10n = AppLocalizations.of(context);
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Icon = アイコンを表示
-          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
-          SizedBox(height: 16), // 縦の余白
+          const Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
+          const SizedBox(height: 16), // 縦の余白
           Text(
-            '習慣がまだありません',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            l10n.noHabitsYet, //まだ習慣がありません
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            '右下の + ボタンから追加しましょう',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+            l10n.tapPlusToAdd, //画面下の「＋」ボタンをタップして習慣を追加しましょう
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
           ),
         ],
       ),
@@ -312,6 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// ListView.builder と違い、グループヘッダーなど
   /// 様々なウィジェットを自由に配置できる
   Widget _buildGroupedHabitList() {
+    final l10n = AppLocalizations.of(context);
     // 習慣を3つのグループに分類
     final groups = _groupHabits();
     final incomplete = groups['incomplete']!;
@@ -325,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // padding = リスト全体の余白
       padding: const EdgeInsets.all(16),
       children: [
-        // 達成率カード（新規追加）
+        // 達成率カード
         if (totalToday > 0)
           CompletionRateCard(
             completionRate: completionRate,
@@ -337,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // if と ... を組み合わせた条件付き表示
         // グループが空でなければヘッダーとカードを表示
         if (incomplete.isNotEmpty) ...[
-          _buildGroupHeader('今日の習慣', incomplete.length),
+          _buildGroupHeader(l10n.todaysHabits, incomplete.length), //今日の習慣
           // ... はスプレッド演算子: リストの中身を展開する
           // map() で各習慣を HabitCard ウィジェットに変換
           ...incomplete.map((habit) => _buildHabitCardWidget(habit)),
@@ -346,14 +350,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 2. 今日の達成済みの習慣
         if (completed.isNotEmpty) ...[
-          _buildGroupHeader('達成済み', completed.length),
+          _buildGroupHeader(l10n.completed, completed.length), //達成済み
           ...completed.map((habit) => _buildHabitCardWidget(habit)),
           const SizedBox(height: 24),
         ],
 
         // 3. 今日は対象外の習慣（曜日順にソート済み）
         if (notToday.isNotEmpty) ...[
-          _buildGroupHeader('今日は対象外', notToday.length),
+          _buildGroupHeader(l10n.notTargetToday, notToday.length), //今日は対象外
           ...notToday.map((habit) => _buildHabitCardWidget(habit)),
         ],
       ],
@@ -448,6 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await _loadHabits();
         }
       },
+      l10n: AppLocalizations.of(context),
     );
   }
 }
