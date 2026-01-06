@@ -170,9 +170,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率を取得（デバッグ用）
-  // double _getTodayCompletionRate(){
-  //   return _getCompletionRate(DateTime.now()) ?? 0.0;
-  // }
+  double _getTodayCompletionRate(){
+    return _getCompletionRate(DateTime.now()) ?? 0.0;
+  }
 
   //日付をYYYY-MM-DD形式に変換
   String _formatDate(DateTime date) {
@@ -252,7 +252,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     //子要素を横幅いっぱいに引き延ばす
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // _buildTodayCompletionRate(),
+                      _buildTodayCompletionRate(),
                       // const SizedBox(height: 20),
 
                       //凡例リスト
@@ -525,39 +525,39 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率表示を構築
-  // Widget _buildTodayCompletionRate() {
-  //   //今日の達成率を表示するやつ(デバッグ用)
-  //   final rate=_getTodayCompletionRate();
-  //   final percentage=(rate*100).toInt();
+  Widget _buildTodayCompletionRate() {
+    //今日の達成率を表示するやつ(デバッグ用)
+    final rate=_getTodayCompletionRate();
+    final percentage=(rate*100).toInt();
 
-  //   final bool isPerfect= rate >= 1.0;
+    final bool isPerfect= rate >= 1.0;
 
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(
-  //       horizontal: 12,
-  //       vertical: 6,
-  //     ),
-  //     decoration: BoxDecoration(
-  //       gradient: isPerfect ? _glowingGoldGradient:null,
-  //       color: isPerfect ? null : _getHeatColor(rate),
-  //       borderRadius: BorderRadius.circular(12),
-  //       border: Border.all(
-  //         color: Colors.grey.shade300,
-  //         width: 1,
-  //       ),
-  //     ),
-  //     child: Text(
-  //       "今日: $percentage%",
-  //       style: TextStyle(
-  //         color: rate > 0.0
-  //           ? Colors.black
-  //           :Theme.of(context).colorScheme.onSurface,
-  //         fontSize: 14,
-  //         fontWeight: FontWeight.bold,
-  //       ),
-  //     ),
-  //   );
-  // }
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        gradient: isPerfect ? _glowingGoldGradient:null,
+        color: isPerfect ? null : _getHeatColor(rate),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        "今日: $percentage%",
+        style: TextStyle(
+          color: rate > 0.0
+            ? Colors.black
+            :Theme.of(context).colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
   //凡例の各項目を構築
   Widget _buildLegendItem(String label, Color? color,{Gradient? gradient, IconData? icon}) {
