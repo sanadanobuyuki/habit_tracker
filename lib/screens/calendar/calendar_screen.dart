@@ -17,9 +17,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //現在の年月
   DateTime _currentMonth = DateTime.now();
 
-  //初回読み込みが完了したかどうか
-  bool _hasLoadedOnce = false;
-
   //達成率データをキャッシュ
   Map<String , double> _completionRateCache={};
   //キャッシュの原理
@@ -28,7 +25,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //ローディング状態
   bool _isLoading=false;
 
-   //金色のグラデーション定義
+  //最長連続達成日数
+  int _maxStreak=0;
+
+  //今月の達成日数
+  int _thisMonthCompletedDays=0;
+
+  //金色のグラデーション定義
   final LinearGradient _glowingGoldGradient = const LinearGradient(
     //begin グラデーションを始める位置
     begin: Alignment.topLeft,
@@ -47,19 +50,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _loadInitial();
+    _loadMonthRecord();
   }
 
   //====================================データ読み込みたち=================================
-
-  //初回データ読み込み
-  Future<void> _loadInitial() async {
-    await _loadMonthRecord();
-    if (mounted) {
-      //読み込み完了フラグを立てる
-      setState(() => _hasLoadedOnce = true);
-    }
-  }
 
   //月の記録を読み込む機能
 
@@ -73,10 +67,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     setState(()=> _isLoading=true);
 
     //月の最初の日
+    final firstDay=DateTime(_currentMonth.year,_currentMonth.month,1);
+
+    //月の最初の日
     final lastDay=DateTime(_currentMonth.year,_currentMonth.month+1,0);
 
     //新しいキャッシュを作成
     final newCache=<String,double>{};
+
+    //今月の達成日数をカウント
+    int completedDaysCount=0;
 
     //各日付の達成率を取得
     //その月のすべての日付の達成率を一度に取得
@@ -89,17 +89,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
       //メモリに保存
       newCache[dateString]=rate;
+
+      //達成した日をカウント
+      if(rate>0.0){
+        completedDaysCount++;
+      }
     }
+
+    //最長連続達成日数を計算
+    final maxStreak=await _calculateMaxStreak(firstDay, lastDay);
 
     if (mounted) {
       setState((){
-
         //一度に反映するからちらつかない
         _completionRateCache=newCache;
+
+        //今月の達成日数
+        _thisMonthCompletedDays=completedDaysCount;
+
+        //最長連続達成日数
+        _maxStreak=maxStreak;
 
         _isLoading=false;
       });
     }
+  }
+
+  //最長連続達成日数を計算
+  Future<int> _calculateMaxStreak(DateTime firstDay,DateTime lastDay) async{
+    int maxStreak=0;
+    int currentStreak=0;
+
+    for(int day =1; day <= lastDay.day; day++){
+      final date=DateTime(_currentMonth.year,_currentMonth.month,day);
+      final dateString=_formatDate(date);
+
+      final rate=await _db.getCompletionRateForDate(dateString);
+
+      if(rate>0.0){
+        //達成で連続カウント増加
+        currentStreak++;
+        if(currentStreak > maxStreak){
+          maxStreak=currentStreak;
+        }
+      }else{
+        //未達成で連続リセット
+        currentStreak=0;
+      }
+    }
+
+    return maxStreak;
   }
 
   //=========================================月切り替え================================
@@ -170,9 +209,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //今日の達成率を取得（デバッグ用）
-  double _getTodayCompletionRate(){
-    return _getCompletionRate(DateTime.now()) ?? 0.0;
-  }
+  // double _getTodayCompletionRate(){
+  //   return _getCompletionRate(DateTime.now()) ?? 0.0;
+  // }
 
   //日付をYYYY-MM-DD形式に変換
   String _formatDate(DateTime date) {
@@ -252,7 +291,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     //子要素を横幅いっぱいに引き延ばす
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildTodayCompletionRate(),
+                      //デバッグ用
+                      // _buildTodayCompletionRate(),
                       // const SizedBox(height: 20),
 
                       //凡例リスト
@@ -305,7 +345,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       key: const Key('calendar-screen'),
       onVisibilityChanged: (info) {
         //画面が表示されたとき(50%以上見えていたら)パッケージのやつ
-        if (info.visibleFraction > 0.5 && _hasLoadedOnce && mounted) {
+        if (info.visibleFraction > 0.5 && mounted) {
           //print("カレンダーが表示されました-データ再読み込み");
           _loadMonthRecord();
         }
@@ -352,6 +392,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           //カレンダー本体
           _buildCalendar(),
+          const SizedBox(height: 24),
+
+          //統計情報
+          _buildStatsCard(),
           const SizedBox(height: 24),
         ],
       ),
@@ -524,40 +568,156 @@ class _CalendarScreenState extends State<CalendarScreen> {
         date.day == now.day;
   }
 
-  //今日の達成率表示を構築
-  Widget _buildTodayCompletionRate() {
-    //今日の達成率を表示するやつ(デバッグ用)
-    final rate=_getTodayCompletionRate();
-    final percentage=(rate*100).toInt();
-
-    final bool isPerfect= rate >= 1.0;
+  //統計情報カードを構築
+  Widget _buildStatsCard(){
+    final colorScheme =Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: isPerfect ? _glowingGoldGradient:null,
-        color: isPerfect ? null : _getHeatColor(rate),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Text(
-        "今日: $percentage%",
-        style: TextStyle(
-          color: rate > 0.0
-            ? Colors.black
-            :Theme.of(context).colorScheme.onSurface,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart,
+                color: colorScheme.primary,
+                size:24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "${_currentMonth.year}年${_currentMonth.month}月の統計",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          //統計データを横並びで表示
+          Row(
+            children: [
+              //最長連続達成日数
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.local_fire_department,
+                  label: "最長連続達成",
+                  value: '$_maxStreak日',
+                  color:Colors.orange,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              //今月の達成日数
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.check_circle,
+                  label: "${_currentMonth.month}月の達成日数",
+                  value: '$_thisMonthCompletedDays日',
+                  color:Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+  //統計の各項目を構築
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //今日の達成率表示を構築
+  // Widget _buildTodayCompletionRate() {
+  //   //今日の達成率を表示するやつ(デバッグ用)
+  //   final rate=_getTodayCompletionRate();
+  //   final percentage=(rate*100).toInt();
+
+  //   final bool isPerfect= rate >= 1.0;
+
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: 12,
+  //       vertical: 6,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       gradient: isPerfect ? _glowingGoldGradient:null,
+  //       color: isPerfect ? null : _getHeatColor(rate),
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(
+  //         color: Colors.grey.shade300,
+  //         width: 1,
+  //       ),
+  //     ),
+  //     child: Text(
+  //       "今日: $percentage%",
+  //       style: TextStyle(
+  //         color: rate > 0.0
+  //           ? Colors.black
+  //           :Theme.of(context).colorScheme.onSurface,
+  //         fontSize: 14,
+  //         fontWeight: FontWeight.bold,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   //凡例の各項目を構築
   Widget _buildLegendItem(String label, Color? color,{Gradient? gradient, IconData? icon}) {
