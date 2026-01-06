@@ -113,6 +113,7 @@ class _AddHabitState extends State<AddHabit> {
       //3.リストがからでなければ実績解除の通知を表示
       final newAchievements = await _achievementController
           .checkHabitCountAchievements();
+      // ignore: use_build_context_synchronously
       final l10n = AppLocalizations.of(context);
       // 保存成功
       if (mounted) {
