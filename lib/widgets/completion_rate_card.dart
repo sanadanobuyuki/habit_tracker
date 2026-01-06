@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 
 /// CompletionRateCard クラス
 ///
@@ -26,6 +27,7 @@ class CompletionRateCard extends StatelessWidget {
     // 背景色に応じた文字色を取得
     final textColor = _getTextColor(completionRate);
 
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(24),
@@ -60,7 +62,7 @@ class CompletionRateCard extends StatelessWidget {
         children: [
           // タイトル
           Text(
-            '今日の達成率',
+            l10n.todaysCompletionRate,
             style: TextStyle(
               // ignore: deprecated_member_use
               color: textColor.withOpacity(0.9),
@@ -84,7 +86,7 @@ class CompletionRateCard extends StatelessWidget {
 
           // 達成数/総数
           Text(
-            '$completedCount/$totalCount 完了',
+            l10n.completedCount(totalCount, completedCount),
             style: TextStyle(
               // ignore: deprecated_member_use
               color: textColor.withOpacity(0.9),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/habit.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 
 /// HabitCard
 ///
@@ -17,7 +18,7 @@ class HabitCard extends StatelessWidget {
   final VoidCallback onTap;
   final Future<bool> Function() onDeleteConfirm;
   final VoidCallback onEdit;
-
+  final AppLocalizations l10n;
   const HabitCard({
     super.key,
     required this.habit,
@@ -26,6 +27,7 @@ class HabitCard extends StatelessWidget {
     required this.onTap,
     required this.onDeleteConfirm,
     required this.onEdit,
+    required this.l10n,
   });
 
   @override
@@ -171,7 +173,7 @@ class HabitCard extends StatelessWidget {
     if (!isTargetDay) {
       // 今日は対象外の場合
       return Text(
-        '今日は対象外',
+        l10n.notTargetToday,
         style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
       );
     }
@@ -182,7 +184,7 @@ class HabitCard extends StatelessWidget {
           const Text('🔥', style: TextStyle(fontSize: 14)),
           const SizedBox(width: 4),
           Text(
-            '$streakCount日連続',
+            l10n.daysStreak(streakCount),
             style: TextStyle(
               fontSize: 14,
               color: Colors.orange[700],
@@ -193,7 +195,10 @@ class HabitCard extends StatelessWidget {
       );
     } else {
       // 連続達成0日の場合
-      return Text('目標', style: TextStyle(fontSize: 14, color: Colors.grey));
+      return Text(
+        l10n.goal,
+        style: TextStyle(fontSize: 14, color: Colors.grey),
+      );
     }
   }
 
@@ -287,7 +292,7 @@ class HabitCard extends StatelessWidget {
             // 編集メニュー
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.blue),
-              title: const Text('編集'),
+              title: Text(l10n.edit),
               onTap: () {
                 Navigator.pop(context); // メニューを閉じる
                 onEdit(); // 編集画面へ遷移
@@ -297,7 +302,7 @@ class HabitCard extends StatelessWidget {
             // 削除メニュー
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('削除'),
+              title: Text(l10n.delete),
               onTap: () async {
                 Navigator.pop(context); // メニューを閉じる
                 await onDeleteConfirm(); // 削除確認ダイアログを表示

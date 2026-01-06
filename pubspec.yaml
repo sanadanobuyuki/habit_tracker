@@ -39,6 +39,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   visibility_detector: ^0.4.0+2
+  flutter_localizations:  # Flutterの多言語化サポート
+    sdk: flutter
+  intl: any  # 日付・数値のフォーマット用
 
 dev_dependencies:
   flutter_test:

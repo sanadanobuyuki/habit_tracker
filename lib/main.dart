@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:habit_tracker/data/achievement_data.dart';
 import 'package:provider/provider.dart';
 //データベース削除の際に必要　コメントアウト推奨
@@ -6,6 +7,8 @@ import 'package:provider/provider.dart';
 // import 'package:path/path.dart';
 import 'services/database_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/achievements/achievements_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
@@ -47,55 +50,86 @@ class MyApp extends StatelessWidget {
     // ChangeNotifierProvider について:
     // ThemeProvider を全体で使えるようにする
     // Provider パターンで状態管理を行う
-    return ChangeNotifierProvider(
-      create: (context) {
-        final provider = ThemeProvider();
-        // アプリ起動時にテーマを読み込む
-        provider.loadTheme();
-        return provider;
-      },
-      // Consumer を MaterialApp の中に移動することで、
-      // テーマ変更時に MaterialApp 自体は再構築されず、
-      // theme プロパティだけが更新される
-      child: const _MaterialAppWithTheme(),
+    //言語Providerを追加それに伴いMultiProviderに変更
+    return MultiProvider(
+      providers: [
+        // テーマProvider (既存)
+        ChangeNotifierProvider(
+          create: (context) {
+            final provider = ThemeProvider();
+            provider.loadTheme();
+            return provider;
+          },
+        ),
+        // 言語Provider (新規追加)
+        ChangeNotifierProvider(
+          create: (context) {
+            final provider = LanguageProvider();
+            // アプリ起動時に保存された言語を読み込む
+            provider.loadLanguage();
+            return provider;
+          },
+        ),
+      ],
+      child: const _MaterialAppWithSettings(),
     );
   }
 }
 
-/// MaterialApp をラップして、theme だけを監視
+/// MaterialApp をラップして、theme とlocaleを監視
 ///
 /// これにより、テーマ変更時に MaterialApp が再構築されず、
 /// ナビゲーションスタック（画面履歴）が保持される
-class _MaterialAppWithTheme extends StatelessWidget {
-  const _MaterialAppWithTheme();
+class _MaterialAppWithSettings extends StatelessWidget {
+  const _MaterialAppWithSettings();
 
   @override
   Widget build(BuildContext context) {
-    // Selector を使って theme だけを監視
-    // Consumer と違い、指定したプロパティだけを監視できる
-    return Selector<ThemeProvider, ThemeData>(
-      // どのプロパティを監視するか
-      selector: (context, themeProvider) =>
-          themeProvider.currentTheme.themeData,
-      // theme が変更された時だけ再構築
-      builder: (context, themeData, child) {
-        return MaterialApp(
-          // title = アプリ名
-          title: 'ハビコツ',
+    //テーマを監視
+    // テーマを監視 (既存)
+    final themeData = context.select<ThemeProvider, ThemeData>(
+      (provider) => provider.currentTheme.themeData,
+    );
 
-          //debugフラグを消すやつ
-          debugShowCheckedModeBanner: false,
+    // 言語を監視 (新規追加)
+    final locale = context.select<LanguageProvider, Locale>(
+      (provider) => provider.locale,
+    );
 
-          // theme = アプリ全体のテーマ設定
-          // ThemeProvider から現在のテーマを取得
-          theme: themeData,
+    return MaterialApp(
+      // title = アプリ名
+      title: 'ハビコツ',
 
-          // home = 最初に表示する画面
-          home: child,
-        );
-      },
-      // child は再利用されるため、MainScreen は再構築されない
-      child: const MainScreen(),
+      //debugフラグを消すやつ
+      debugShowCheckedModeBanner: false,
+
+      // theme = アプリ全体のテーマ設定
+      // ThemeProvider から現在のテーマを取得
+      theme: themeData,
+
+      // 現在の言語を設定
+      locale: locale,
+
+      // 多言語化のための delegate を登録
+      localizationsDelegates: const [
+        // アプリの翻訳
+        AppLocalizations.delegate,
+        // マテリアルウィジェットの翻訳 (ボタンなど)
+        GlobalMaterialLocalizations.delegate,
+        // 基本ウィジェットの翻訳
+        GlobalWidgetsLocalizations.delegate,
+        // iOSスタイルウィジェットの翻訳
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      // サポートする言語のリスト
+      supportedLocales: const [
+        Locale('ja'), // 日本語
+        Locale('en'), // 英語
+      ],
+
+      // home = 最初に表示する画面
+      home: const MainScreen(),
     );
   }
 }
@@ -122,6 +156,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 多言語化テキストを取得
+    final l10n = AppLocalizations.of(context);
     // MainScreen では通常の Scaffold を使用
     // （ThemedScaffold を使うと、テーマ変更時に全体が再構築される）
     return ThemedScaffold(
@@ -145,14 +181,23 @@ class _MainScreenState extends State<MainScreen> {
         },
 
         // items = ナビゲーションバーの各タブ
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "ホーム"),
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: "カレンダー",
+            icon: const Icon(Icons.home),
+            label: l10n.home,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.emoji_events), label: "実績"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "設定"),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.calendar_month),
+            label: l10n.calendar,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.emoji_events),
+            label: l10n.achievements,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.settings),
+            label: l10n.settings,
+          ),
         ],
       ),
     );
