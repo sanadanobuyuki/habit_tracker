@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/habit.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 import '../../controllers/habit_controller.dart';
 import '../../widgets/themed_scaffold.dart';
 
@@ -105,9 +106,10 @@ class _EditHabitState extends State<EditHabit> {
   /// 4. エラーがあればスナックバーで通知
   Future<void> _updateHabit() async {
     // 習慣名が空でないかチェック
+    final l10n = AppLocalizations.of(context);
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      _showErrorMessage('習慣名を入力してください');
+      _showErrorMessage(l10n.pleaseEnterHabitName); // 習慣名を入力してください
       return;
     }
 
@@ -171,19 +173,20 @@ class _EditHabitState extends State<EditHabit> {
   /// - null → "毎日"
   /// - "1,3,5" → "月 水 金"
   String _getDaysOfWeekText() {
+    final l10n = AppLocalizations.of(context);
     if (widget.habit.daysOfWeek == null || widget.habit.daysOfWeek!.isEmpty) {
-      return '毎日';
+      return l10n.everyday; // 毎日
     }
 
     // 曜日番号を日本語に変換するマップ
-    const dayNames = {
-      '1': '月',
-      '2': '火',
-      '3': '水',
-      '4': '木',
-      '5': '金',
-      '6': '土',
-      '7': '日',
+    final dayNames = {
+      '1': l10n.monday, // 月
+      '2': l10n.tuesday, // 火
+      '3': l10n.wednesday, // 水
+      '4': l10n.thursday, // 木
+      '5': l10n.friday, // 金
+      '6': l10n.saturday, // 土
+      '7': l10n.sunday, // 日
     };
 
     // "1,3,5" を分割して ["月", "水", "金"] に変換
@@ -198,10 +201,11 @@ class _EditHabitState extends State<EditHabit> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ThemedScaffold(
       // AppBar = 画面上部のバー
       appBar: AppBar(
-        title: const Text('習慣を編集'),
+        title: Text(l10n.editHabit), // 習慣を編集
         // leading = AppBar左端のウィジェット
         // 自動的に「戻る」ボタンが表示される
       ),
@@ -240,18 +244,19 @@ class _EditHabitState extends State<EditHabit> {
 
   /// 習慣名の入力欄
   Widget _buildNameField() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '習慣名',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.habitName, //習慣名
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _nameController,
           decoration: InputDecoration(
-            hintText: '例: 朝の運動',
+            hintText: l10n.habitNameHint, //例: 朝の運動
             // suffixIcon = テキストフィールド右端のアイコン
             suffixIcon: Padding(
               padding: const EdgeInsets.all(8),
@@ -269,12 +274,13 @@ class _EditHabitState extends State<EditHabit> {
 
   /// 絵文字選択エリア
   Widget _buildEmojiSelector() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '絵文字',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.emoji, //絵文字
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         // Wrap について:
@@ -321,12 +327,13 @@ class _EditHabitState extends State<EditHabit> {
 
   /// 色選択エリア
   Widget _buildColorSelector() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '色',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.color, //色
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -379,12 +386,13 @@ class _EditHabitState extends State<EditHabit> {
 
   /// 曜日表示エリア（編集不可）
   Widget _buildDaysOfWeekDisplay() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '曜日',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.daysOfWeek, //曜日
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Container(
@@ -410,7 +418,7 @@ class _EditHabitState extends State<EditHabit> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      '曜日は変更できません',
+                      l10n.daysOfWeekCannotBeChanged, // 曜日は編集できません
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ),
@@ -425,6 +433,7 @@ class _EditHabitState extends State<EditHabit> {
 
   /// 保存ボタン
   Widget _buildSaveButton() {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity, // 画面幅いっぱい
       height: 50,
@@ -445,7 +454,7 @@ class _EditHabitState extends State<EditHabit> {
                 ),
               )
             // 通常時は「保存する」テキスト
-            : const Text('保存する', style: TextStyle(fontSize: 16)),
+            : Text(l10n.save, style: const TextStyle(fontSize: 16)),
       ),
     );
   }

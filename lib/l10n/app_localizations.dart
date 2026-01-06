@@ -149,6 +149,9 @@ class AppLocalizations {
   String get everyday => locale.languageCode == 'ja' ? '毎日' : 'Everyday';
   String get selectDays =>
       locale.languageCode == 'ja' ? '曜日を選択' : 'Select Days';
+  String get daysOfWeekCannotBeChanged => locale.languageCode == 'ja'
+      ? '曜日は編集できません'
+      : 'Days of Week cannot be changed';
 
   // 曜日名
   String get monday => locale.languageCode == 'ja' ? '月' : 'Mon';
