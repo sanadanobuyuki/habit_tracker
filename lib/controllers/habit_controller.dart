@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../models/habit.dart';
-import '../controllers/achievement_controller.dart'; // 【追加】
+import '../controllers/achievement_controller.dart';
+import '../l10n/app_localizations.dart';
 
 /// OperationResult クラス
 /// 役割:
@@ -28,38 +29,52 @@ class OperationResult {
 /// - 習慣達成時に実績チェックを実行 【追加】
 class HabitController {
   final DatabaseService _db = DatabaseService();
+  final AchievementController _achievementController = AchievementController();
 
   Future<OperationResult> updateHabit({
+    required BuildContext context,
     required String id,
     required String name,
     required String emoji,
     required int color,
   }) async {
+    // 多言語化テキストを取得
+    final l10n = AppLocalizations.of(context);
     try {
       // バリデーション: 習慣名が空でないかチェック
       if (name.trim().isEmpty) {
-        return OperationResult(success: false, message: '習慣名を入力してください');
+        return OperationResult(
+          success: false,
+          message: l10n.pleaseEnterHabitName,
+        ); //習慣名を入力してください
       }
 
       // バリデーション: 習慣名が長すぎないかチェック
       if (name.length > 30) {
-        return OperationResult(success: false, message: '習慣名は30文字以内で入力してください');
+        return OperationResult(
+          success: false,
+          message: l10n.habitNameTooLong,
+        ); //習慣名が長すぎます30文字以内で入力してください
       }
 
       // DatabaseService で習慣を更新
       await _db.updateHabit(id: id, name: name, emoji: emoji, color: color);
 
       // 成功を返す
-      return OperationResult(success: true, message: '習慣を更新しました');
+      return OperationResult(
+        success: true,
+        message: l10n.habitUpdated,
+      ); //習慣を更新しました
     } catch (e) {
       // エラーが発生した場合
       // ignore: avoid_print
       print('習慣の更新エラー: $e');
-      return OperationResult(success: false, message: '更新中にエラーが発生しました: $e');
+      return OperationResult(
+        success: false,
+        message: l10n.errorOccurred(e.toString()),
+      ); //エラーが発生しました
     }
   }
-
-  final AchievementController _achievementController = AchievementController();
 
   /// 習慣を読み込む
   ///
@@ -114,20 +129,25 @@ class HabitController {
     );
   }
 
-  /// 習慣の達成状態を切り替える【実績チェック追加版】
-  ///
-  /// 処理の流れ:
-  /// 1. 現在の達成状態を確認
-  /// 2. 達成/未達成を反転
-  /// 3. データベースに保存または更新
-  /// 4. 【追加】達成した場合は実績をチェック
-  /// 5. 画面を更新
-  ///
-  /// 戻り値:
-  /// - success: 成功したかどうか
-  /// - newCompleted: 新しい達成状態 (0 or 1)
-  /// - message: 表示するメッセージ
-  /// - unlockedAchievements: 新しく解除された実績のリスト 【追加】
+  // 習慣の達成状態を切り替える【多言語対応版】
+  //
+  // 引数:
+  // - context: BuildContext (多言語化のため追加)
+  // - habit: 習慣オブジェクト
+  // - currentCompleted: 現在の達成状態
+  //
+  // 処理の流れ:
+  // 1. 現在の達成状態を確認
+  // 2. 達成/未達成を反転
+  // 3. データベースに保存または更新
+  // 4. 達成した場合は実績をチェック
+  // 5. 画面を更新
+  //
+  // 戻り値:
+  // - success: 成功したかどうか
+  // - newCompleted: 新しい達成状態 (0 or 1)
+  // - message: 表示するメッセージ（多言語化済み）
+  // - unlockedAchievements: 新しく解除された実績のリスト
   Future<
     ({
       bool success,
@@ -136,9 +156,15 @@ class HabitController {
       List<dynamic> unlockedAchievements,
     })
   >
-  toggleHabitCompletion(Habit habit, int currentCompleted) async {
+  toggleHabitCompletion(
+    BuildContext context,
+    Habit habit,
+    int currentCompleted,
+  ) async {
     final today = _getTodayString();
 
+    // 多言語化テキストを取得
+    final l10n = AppLocalizations.of(context);
     // 現在の達成状態を取得 (未記録の場合は0=未達成)
     // 達成状態を反転 (0→1, 1→0)
     final newCompleted = currentCompleted == 0 ? 1 : 0;
@@ -203,8 +229,10 @@ class HabitController {
 
       // スナックバーで通知
       final message = newCompleted == 1
-          ? '${habit.emoji} ${habit.name} を達成しました!'
-          : '${habit.name} の達成を取り消しました';
+          ? l10n.habitCompleted(habit.emoji, habit.name)
+          // ●●を達成しました
+          : l10n.habitUncompleted(habit.name);
+      // 日本語: ●● の達成を取り消しました
 
       return (
         success: true,
@@ -217,26 +245,41 @@ class HabitController {
       return (
         success: false,
         newCompleted: currentCompleted,
-        message: 'エラーが発生しました: $e',
+        message: l10n.errorOccurred(e.toString()), //エラーが発生しました
         unlockedAchievements: <dynamic>[],
       );
     }
   }
 
-  /// 習慣を削除する
-  ///
-  /// 実際には削除フラグを1に更新するだけ
-  /// 理由: 過去の記録は保持したいため
-  ///
-  /// 戻り値:
-  /// - success: 成功したかどうか
-  /// - message: 表示するメッセージ
-  Future<({bool success, String message})> deleteHabit(Habit habit) async {
+  // 習慣を削除する
+  //
+  // 引数:
+  // - context: BuildContext (多言語化のため)
+  // - habit: 削除する習慣
+  //
+  // 実際には削除フラグを1に更新するだけ
+  // 理由: 過去の記録は保持したいため
+  //
+  // 戻り値:
+  // - success: 成功したかどうか
+  // - message: 表示するメッセージ
+  Future<({bool success, String message})> deleteHabit(
+    BuildContext context,
+    Habit habit,
+  ) async {
+    // 多言語化テキストを取得
+    final l10n = AppLocalizations.of(context);
     try {
       await _db.deleteHabit(habit.id);
-      return (success: true, message: '「${habit.name}」を削除しました');
+      return (
+        success: true,
+        message: l10n.habitDeleted(habit.name),
+      ); //●●を削除しました
     } catch (e) {
-      return (success: false, message: 'エラーが発生しました: $e');
+      return (
+        success: false,
+        message: l10n.errorOccurred(e.toString()),
+      ); //エラーが発生しました
     }
   }
 

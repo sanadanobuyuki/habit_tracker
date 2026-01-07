@@ -78,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // HabitControllerで達成状態を切り替え
     final result = await _controller.toggleHabitCompletion(
+      context,
       habit,
       currentCompleted,
     );
@@ -107,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 2. スナックバーで結果を通知
   /// 3. 成功したら習慣リストを再読み込み
   Future<void> _deleteHabit(Habit habit) async {
-    final result = await _controller.deleteHabit(habit);
+    final result = await _controller.deleteHabit(context, habit);
 
     // スナックバーで削除完了を通知
     if (mounted) {
