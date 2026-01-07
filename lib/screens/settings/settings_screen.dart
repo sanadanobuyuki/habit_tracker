@@ -77,7 +77,7 @@ class SettingsScreen extends StatelessWidget {
         return ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: Text(l10n.theme), //テーマ
-          subtitle: Text(themeProvider.currentTheme.name),
+          subtitle: Text(l10n.themeName(themeProvider.currentTheme.id)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             // テーマ選択画面に遷移

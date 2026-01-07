@@ -120,6 +120,38 @@ class AppLocalizations {
     return names[locale.languageCode]?[themeId] ?? themeId;
   }
 
+  // ========== テーマ説明の翻訳 ==========
+  String themeDescription(String themeId) {
+    final descriptions = {
+      'ja': {
+        'light': '明るいテーマ',
+        'dark': '暗いテーマ',
+        'blue': '青基調のテーマ',
+        'green': '緑基調のテーマ',
+        'pink': 'ピンク基調のテーマ',
+        'checkered_blue': '青いチェック柄',
+        'dotted_pink': 'かわいいドット柄',
+        'striped_green': '緑のストライプ柄',
+        'gradient_sunset': '夕焼けグラデーション',
+        'dark_checkered': '暗いチェック柄',
+      },
+      'en': {
+        'light': 'Light theme',
+        'dark': 'Dark theme',
+        'blue': 'Blue-based theme',
+        'green': 'Green-based theme',
+        'pink': 'Pink-based theme',
+        'checkered_blue': 'Blue checkered pattern',
+        'dotted_pink': 'Cute dotted pattern',
+        'striped_green': 'Green striped pattern',
+        'gradient_sunset': 'Sunset gradient',
+        'dark_checkered': 'Dark checkered pattern',
+      },
+    };
+
+    return descriptions[locale.languageCode]?[themeId] ?? '';
+  }
+
   // ========== 一般的なテキスト ==========
   String get appTitle => locale.languageCode == 'ja' ? 'ハビコツ' : 'HabiKotsu';
   String get home => locale.languageCode == 'ja' ? 'ホーム' : 'Home';
