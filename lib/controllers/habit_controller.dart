@@ -76,17 +76,20 @@ class HabitController {
     }
   }
 
-  /// 習慣を読み込む
-  ///
-  /// 処理の流れ:
-  /// 1. データベースからすべての習慣を取得
-  /// 2. MapのリストをHabitオブジェクトのリストに変換
-  /// 3. 今日の達成記録を取得
-  ///
-  /// 戻り値:
-  /// - habits: 習慣のリスト
+  // 習慣を読み込む
+  //
+  // 処理の流れ:
+  // 1. データベースからすべての習慣を取得
+  // 2. MapのリストをHabitオブジェクトのリストに変換
+  // 3. 今日の達成記録を取得
+  // 4. 【重要】各習慣の連続達成回数を取得
+  //    - 今日達成済み → includeToday: true（今日を含める）
+  //    - 今日未達成 → includeToday: false（昨日まで）
+  // 戻り値:
+  // - habits: 習慣のリスト
   // ignore: unintended_html_in_doc_comment
-  /// - todayRecords: 今日の達成記録 Map<habit_id, completed>
+  // - todayRecords: 今日の達成記録 Map<habit_id, completed>
+  // - streakCounts: 連続達成回数 Map<habit_id, streak>
   Future<
     ({
       List<Habit> habits,
@@ -117,9 +120,23 @@ class HabitController {
 
     // 連続達成回数を取得
     final streakCounts = <String, int>{};
+
     for (final habit in habits) {
-      final streak = await _db.getStreakCount(habit.id);
+      // この習慣が今日達成済みかチェック
+      final completedToday = todayRecords[habit.id] ?? 0;
+      final isTodayCompleted = completedToday == 1;
+
+      // 達成済みなら今日を含める、未達成なら含めない
+      final streak = await _db.getStreakCount(
+        habit.id,
+        includeToday: isTodayCompleted, // 【重要】達成状態で切り替え
+      );
+
       streakCounts[habit.id] = streak;
+
+      // デバッグ用ログ
+      // ignore: avoid_print
+      print('${habit.name}: 今日達成=$isTodayCompleted, 連続=$streak日');
     }
 
     return (

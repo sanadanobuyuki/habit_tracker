@@ -234,7 +234,7 @@ class AppLocalizations {
       locale.languageCode == 'ja' ? '今日は対象外' : 'Not Today';
   String get notTargetTodayDescription =>
       locale.languageCode == 'ja' ? '今日は対象外' : 'Not scheduled for today';
-  String get goal => locale.languageCode == 'ja' ? '目標' : 'Goal';
+  String get goal => locale.languageCode == 'ja' ? '未達成' : 'Not achieved';
   String daysStreak(int days) =>
       locale.languageCode == 'ja' ? '$days日連続' : '$days day streak';
   String get todaysCompletionRate =>

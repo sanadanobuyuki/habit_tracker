@@ -177,7 +177,7 @@ class HabitCard extends StatelessWidget {
         style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
       );
     }
-    // 今日が対象日の場合は連続達成回数を表示
+    //連続達成回数がある場合は常に表示（達成/未達成問わず）
     if (streakCount > 0) {
       return Row(
         children: [

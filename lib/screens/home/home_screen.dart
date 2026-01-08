@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/l10n/app_localizations.dart';
+import 'package:habit_tracker/services/database_service.dart';
 import '../../models/habit.dart';
 import '../../controllers/habit_controller.dart';
 import '../../widgets/habit_card.dart';
@@ -51,27 +52,27 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 2. 習慣リスト、今日の達成記録、連続達成回数を取得
   /// 3. 画面を更新
   Future<void> _loadHabits() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    // HabitControllerから習慣データと今日の記録と連続達成回数を取得
-    final result = await _controller.loadHabits();
+  // HabitControllerから習慣データと今日の記録を取得
+  final result = await _controller.loadHabits();
 
-    // 画面を更新
-    setState(() {
-      _habits = result.habits;
-      _todayRecords = result.todayRecords;
-      _streakCounts = result.streakCounts; // 追加
-      _isLoading = false;
-    });
-  }
+  // 画面を更新
+  setState(() {
+    _habits = result.habits;
+    _todayRecords = result.todayRecords;
+    _streakCounts = result.streakCounts;
+    _isLoading = false;
+  });
+}
 
-  /// 習慣の達成状態を切り替える
-  ///
-  /// 処理の流れ:
-  /// 1. 現在の達成状態を確認
-  /// 2. HabitControllerを使って達成状態を切り替え
-  /// 3. 成功したら画面を更新
-  /// 4. スナックバーで結果を通知
+  // 習慣の達成状態を切り替える
+  //
+  // 処理の流れ:
+  // 1. 現在の達成状態を確認
+  // 2. HabitControllerを使って達成状態を切り替え
+  // 3. 成功したら画面を更新
+  // 4. スナックバーで結果を通知
   Future<void> _toggleHabitCompletion(Habit habit) async {
     // 現在の達成状態を取得 (未記録の場合は0=未達成)
     final currentCompleted = _todayRecords[habit.id] ?? 0;
@@ -88,6 +89,30 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _todayRecords[habit.id] = result.newCompleted;
       });
+
+      //連続達成日数を再取得
+      try {
+        final db = DatabaseService();
+
+        // 達成状態に応じて、今日を含めるか決定
+        final newStreak = await db.getStreakCount(
+          habit.id,
+          includeToday: result.newCompleted == 1, // 達成なら true、未達成なら false
+        );
+
+        // 画面を更新
+        setState(() {
+          _streakCounts[habit.id] = newStreak;
+        });
+
+        // デバッグ用ログ
+        // ignore: avoid_print
+        print('連続達成日数を更新: ${habit.name} → $newStreak日');
+      } catch (e) {
+        // エラーが発生してもアプリは落とさない
+        // ignore: avoid_print
+        print('連続達成日数の取得エラー: $e');
+      }
     }
 
     // スナックバーで通知

@@ -756,18 +756,35 @@ class DatabaseService {
   }
 
   // 習慣の連続達成回数を取得
-  ///
-  /// 処理の流れ:
-  /// 1. 今日から過去に遡って記録をチェック
-  /// 2. 連続で達成している日数をカウント
-  /// 3. 対象外の曜日は飛ばす
-  ///
-  /// 引数:
-  /// - habitId: 習慣のID
-  ///
-  /// 戻り値:
-  /// - 連続達成回数（日数）
-  Future<int> getStreakCount(String habitId) async {
+  //
+  // 処理の流れ:
+  // 1. 今日から過去に遡って記録をチェック
+  // 2. 連続で達成している日数をカウント
+  // 3. 対象外の曜日は飛ばす
+  //
+  // 使い分け:
+  // - includeToday = false（デフォルト）
+  //   → 昨日までの連続記録を取得
+  //   → 用途: 今日未達成の時に「昨日までの記録」を表示
+  //   → 例: 3日連続達成中、今日まだ未達成 → "🔥 3日連続" と表示
+  //
+  // - includeToday = true
+  //   → 今日を含めた連続記録を取得
+  //   → 用途: 今日達成した時に「今日を含めた記録」を表示
+  //   → 例: 3日連続達成中、今日達成 → "🔥 4日連続" と表示
+  //
+  // 引数:
+  // - habitId: 習慣のID
+  // - includeToday: 今日を含めるかどうか
+  //   - false: 昨日までの連続記録（デフォルト）
+  //   - true: 今日を含めた連続記録
+  //
+  // 戻り値:
+  // - 連続達成回数（日数）
+  Future<int> getStreakCount(
+    String habitId, {
+    bool includeToday = false,
+  }) async {
     final db = await database;
 
     // 習慣の情報を取得
@@ -777,23 +794,38 @@ class DatabaseService {
       whereArgs: [habitId],
     );
 
+    // 習慣が見つからない場合は0を返す
     if (habitResult.isEmpty) return 0;
 
+    // 曜日設定を取得
+    // null = 毎日対象
+    // "1,3,5" = 月・水・金のみ対象
     final daysOfWeek = habitResult.first['days_of_week'] as String?;
 
-    // 今日から過去に遡ってチェック
+    // 連続達成日数のカウンター
     int streakCount = 0;
-    DateTime currentDate = DateTime.now();
 
+    // 開始日を決定
+    // includeToday = true → 今日から開始
+    // includeToday = false → 昨日から開始
+    DateTime currentDate = includeToday
+        ? DateTime.now() // 今日を含める場合
+        : DateTime.now().subtract(const Duration(days: 1)); // 昨日から
+
+    // 過去に遡ってチェック
     while (true) {
+      // 日付を YYYY-MM-DD 形式に変換
       final dateStr = _formatDate(currentDate);
+
+      // 曜日を取得（1=月, 2=火, ..., 7=日）
       final weekday = currentDate.weekday;
 
       // この日が対象日かチェック
+      // 例: 月水金の習慣で、火曜日ならfalse
       final isTargetDay = _isTargetDay(daysOfWeek, weekday);
 
       if (isTargetDay) {
-        // 記録を取得
+        // 対象日の場合、記録を取得
         final recordResult = await db.query(
           'habit_records',
           where: 'habit_id = ? AND date = ?',
@@ -801,24 +833,28 @@ class DatabaseService {
         );
 
         if (recordResult.isEmpty) {
-          // 記録がない = 連続終了
+          // 記録がない = その日は達成していない
+          // 連続が途切れたので終了
           break;
         }
 
+        // 達成フラグをチェック（0=未達成, 1=達成）
         final completed = recordResult.first['completed'] as int;
+
         if (completed == 1) {
-          // 達成している
+          // 達成している場合、カウントを増やす
           streakCount++;
         } else {
-          // 未達成 = 連続終了
+          // 未達成の場合、連続が途切れたので終了
           break;
         }
       }
+      // 対象外の曜日の場合は何もせず次の日へ
 
-      // 前日に移動
+      // 1日前に移動
       currentDate = currentDate.subtract(const Duration(days: 1));
 
-      // 最大100日まで遡る（無限ループ防止）
+      // 無限ループ防止（最大100日まで）
       if (streakCount >= 100) break;
     }
 
