@@ -477,6 +477,12 @@ class DatabaseService {
       return completed == 1;
     }).length;
 
+    print('📅 日付: $date');
+    print('📋 全習慣数: ${results.length}');
+    print('🎯 対象習慣数: ${targetHabits.length}');
+    print('✅ 達成数: $completedCount');
+    print('📊 達成率: ${completedCount / targetHabits.length}');
+
     //達成率を計算
     return completedCount / targetHabits.length;
   }
