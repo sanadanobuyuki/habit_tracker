@@ -119,6 +119,7 @@ class _EditHabitState extends State<EditHabit> {
     try {
       // HabitController で習慣を更新
       final result = await _controller.updateHabit(
+        context: context,
         id: widget.habit.id,
         name: name,
         emoji: _selectedEmoji,

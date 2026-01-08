@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../l10n/app_localizations.dart';
 import '../../../widgets/pattern_backgrounds.dart';
 import '../../../widgets/themed_scaffold.dart';
 
@@ -16,8 +17,9 @@ class ThemeSelectorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ThemedScaffold(
-      appBar: AppBar(title: const Text('テーマ選択')),
+      appBar: AppBar(title: Text(l10n.themeSelection)), // テーマ選択
       body: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           // アンロック済みとロック中のテーマを分ける
@@ -37,7 +39,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                   context,
                   icon: Icons.check_circle,
                   iconColor: Colors.green,
-                  title: '利用可能なテーマ',
+                  title: l10n.availableThemes, // 利用可能なテーマ
                   count: unlockedThemes.length,
                 ),
                 const SizedBox(height: 12),
@@ -63,7 +65,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                   context,
                   icon: Icons.lock,
                   iconColor: Colors.orange,
-                  title: 'ロック中のテーマ',
+                  title: l10n.lockedThemes, // ロック中のテーマ
                   count: lockedThemes.length,
                 ),
                 const SizedBox(height: 8),
@@ -88,7 +90,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '実績を解除すると使えるようになります',
+                          l10n.unlockByAchievement, // 実績解除で利用可能
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.orange[700],
@@ -118,7 +120,7 @@ class ThemeSelectorScreen extends StatelessWidget {
     );
   }
 
-  /// セクションヘッダーを作成
+  // セクションヘッダーを作成
   Widget _buildSectionHeader(
     BuildContext context, {
     required IconData icon,
@@ -157,6 +159,7 @@ class ThemeSelectorScreen extends StatelessWidget {
 
   /// ロックされたテーマをタップした時のダイアログ
   void _showLockedDialog(BuildContext context, AppTheme theme) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -166,17 +169,20 @@ class ThemeSelectorScreen extends StatelessWidget {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                'テーマがロックされています',
+                l10n.themeLocked, // テーマがロックされています
                 style: const TextStyle(fontSize: 17),
               ),
             ),
           ],
         ),
-        content: Text('テーマ「${theme.name}」を使用するには、特定の実績を解除する必要があります。'),
+        content: Text(
+          l10n.themeLockedMessage(l10n.themeName(theme.id)),
+          // テーマ「$themeName」を使用するには、特定の実績を解除する必要があります。
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),
@@ -191,6 +197,7 @@ class ThemeSelectorScreen extends StatelessWidget {
     bool isLocked,
     VoidCallback onTap,
   ) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -247,7 +254,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            theme.name,
+                            l10n.themeName(theme.id), // テーマ名を多言語化
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -285,7 +292,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'ロック中',
+                                  l10n.locked, // ロック中
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -299,7 +306,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      theme.description,
+                      l10n.themeDescription(theme.id), // テーマ説明を多言語化
                       style: TextStyle(
                         fontSize: 14,
                         color: isLocked
@@ -319,7 +326,7 @@ class ThemeSelectorScreen extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              '実績解除で利用可能',
+                              l10n.availableByAchievement, // 実績解除で利用可能
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.orange[700],
