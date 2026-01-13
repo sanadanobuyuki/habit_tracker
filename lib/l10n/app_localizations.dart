@@ -186,7 +186,16 @@ class AppLocalizations {
       : 'Target Frequency (per week)';
   String get timesPerWeek => locale.languageCode == 'ja' ? '回' : 'times';
 
-  // 曜日名
+  // ========== カレンダー用の曜日名（省略形） ==========
+  String get sun => locale.languageCode == 'ja' ? '日' : 'Sun';
+  String get mon => locale.languageCode == 'ja' ? '月' : 'Mon';
+  String get tue => locale.languageCode == 'ja' ? '火' : 'Tue';
+  String get wed => locale.languageCode == 'ja' ? '水' : 'Wed';
+  String get thu => locale.languageCode == 'ja' ? '木' : 'Thu';
+  String get fri => locale.languageCode == 'ja' ? '金' : 'Fri';
+  String get sat => locale.languageCode == 'ja' ? '土' : 'Sat';
+
+  // 曜日名（フルネーム - 既存のもの）
   String get monday => locale.languageCode == 'ja' ? '月' : 'Mon';
   String get tuesday => locale.languageCode == 'ja' ? '火' : 'Tue';
   String get wednesday => locale.languageCode == 'ja' ? '水' : 'Wed';
@@ -194,6 +203,32 @@ class AppLocalizations {
   String get friday => locale.languageCode == 'ja' ? '金' : 'Fri';
   String get saturday => locale.languageCode == 'ja' ? '土' : 'Sat';
   String get sunday => locale.languageCode == 'ja' ? '日' : 'Sun';
+
+  // ========== 月名 ==========
+  String get january => locale.languageCode == 'ja' ? '1月' : 'January';
+  String get february => locale.languageCode == 'ja' ? '2月' : 'February';
+  String get march => locale.languageCode == 'ja' ? '3月' : 'March';
+  String get april => locale.languageCode == 'ja' ? '4月' : 'April';
+  String get may => locale.languageCode == 'ja' ? '5月' : 'May';
+  String get june => locale.languageCode == 'ja' ? '6月' : 'June';
+  String get july => locale.languageCode == 'ja' ? '7月' : 'July';
+  String get august => locale.languageCode == 'ja' ? '8月' : 'August';
+  String get september => locale.languageCode == 'ja' ? '9月' : 'September';
+  String get october => locale.languageCode == 'ja' ? '10月' : 'October';
+  String get november => locale.languageCode == 'ja' ? '11月' : 'November';
+  String get december => locale.languageCode == 'ja' ? '12月' : 'December';
+
+  // ========== カレンダー画面用のテキスト ==========
+  String get today => locale.languageCode == 'ja' ? '今日' : 'Today';
+  String get selectPeriodDays =>
+      locale.languageCode == 'ja' ? '生理日を選択' : 'Select your period days';
+  String get tapDatesToMark => locale.languageCode == 'ja'
+      ? '日付をタップして生理日をマーク'
+      : 'Tap dates to mark your period';
+  String daysSelected(int count) =>
+      locale.languageCode == 'ja' ? '$count日選択済み' : '$count days selected';
+  // String daySelected =>
+  //     locale.languageCode == 'ja' ? '1日選択済み' : '1 day selected';
 
   // バリデーションメッセージ
   String get pleaseEnterHabitName => locale.languageCode == 'ja'
@@ -296,7 +331,7 @@ class AppLocalizations {
       ? 'この報酬はすでに受け取り済みです'
       : 'This reward has already been received';
   String achievementUnlocked(String name) => locale.languageCode == 'ja'
-      ? '🎉実績解除！「$name」'
+      ? '🎉実績解除!「$name」'
       : '🎉Achievement Unlocked! "$name"';
   String achievementCondition(dynamic achievement) =>
       locale.languageCode == 'ja'

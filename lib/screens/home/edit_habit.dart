@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/habit.dart';
 import 'package:habit_tracker/l10n/app_localizations.dart';
 import '../../controllers/habit_controller.dart';
+import '../../widgets/emoji_selector.dart';
+import '../../widgets/color_selector.dart';
 import '../../widgets/themed_scaffold.dart';
 
 /// EditHabit クラス
@@ -10,6 +12,7 @@ import '../../widgets/themed_scaffold.dart';
 /// - 既存の習慣を編集する画面
 /// - 名前、絵文字、色のみ編集可能
 /// - 曜日は変更不可（データ整合性のため）
+/// - EmojiSelectorとColorSelectorウィジェットを使用
 class EditHabit extends StatefulWidget {
   // 編集対象の習慣
   final Habit habit;
@@ -34,48 +37,6 @@ class _EditHabitState extends State<EditHabit> {
 
   // 保存中かどうか（ボタンの二重押し防止）
   bool _isSaving = false;
-
-  // 利用可能な絵文字リスト
-  final List<String> _emojis = [
-    '🏃',
-    '💪',
-    '📚',
-    '🎯',
-    '⚽',
-    '🎨',
-    '☕',
-    '🌟',
-    '💤',
-    '🍎',
-    '🧘',
-    '🎵',
-    '✍️',
-    '🚶',
-    '🏊',
-    '🚴',
-    '🧠',
-    '❤️',
-    '🌱',
-    '📖',
-    '🎮',
-    '🍽️',
-    '💼',
-    '🏠',
-  ];
-
-  // 利用可能な色リスト
-  final List<int> _colors = [
-    0xFFE57373, // 赤
-    0xFF64B5F6, // 青
-    0xFF81C784, // 緑
-    0xFFFFD54F, // 黄
-    0xFFBA68C8, // 紫
-    0xFFFF8A65, // オレンジ
-    0xFF4DB6AC, // ティール
-    0xFFA1887F, // 茶
-    0xFF90A4AE, // グレー
-    0xFFF06292, // ピンク
-  ];
 
   @override
   void initState() {
@@ -223,12 +184,26 @@ class _EditHabitState extends State<EditHabit> {
             _buildNameField(),
             const SizedBox(height: 24),
 
-            // 絵文字選択
-            _buildEmojiSelector(),
+            // 絵文字選択（EmojiSelectorウィジェットを使用）
+            EmojiSelector(
+              selectedEmoji: _selectedEmoji,
+              onEmojiSelected: (emoji) {
+                setState(() {
+                  _selectedEmoji = emoji;
+                });
+              },
+            ),
             const SizedBox(height: 24),
 
-            // 色選択
-            _buildColorSelector(),
+            // 色選択（ColorSelectorウィジェットを使用）
+            ColorSelector(
+              selectedColor: _selectedColor,
+              onColorSelected: (color) {
+                setState(() {
+                  _selectedColor = color;
+                });
+              },
+            ),
             const SizedBox(height: 24),
 
             // 曜日表示（編集不可）
@@ -268,118 +243,6 @@ class _EditHabitState extends State<EditHabit> {
           ),
           // maxLength = 最大文字数
           maxLength: 30,
-        ),
-      ],
-    );
-  }
-
-  /// 絵文字選択エリア
-  Widget _buildEmojiSelector() {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.emoji, //絵文字
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        // Wrap について:
-        // 子ウィジェットを横に並べて、幅が足りなくなったら自動で改行
-        Wrap(
-          spacing: 8, // 横の間隔
-          runSpacing: 8, // 縦の間隔（改行時）
-          children: _emojis.map((emoji) {
-            // 選択されている絵文字かチェック
-            final isSelected = emoji == _selectedEmoji;
-
-            return GestureDetector(
-              // GestureDetector について:
-              // タップなどのジェスチャーを検知するウィジェット
-              onTap: () {
-                // 絵文字がタップされたら選択状態を更新
-                setState(() {
-                  _selectedEmoji = emoji;
-                });
-              },
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  // 選択中は青い枠線、未選択は灰色の枠線
-                  border: Border.all(
-                    color: isSelected ? Colors.blue : Colors.grey[300]!,
-                    width: isSelected ? 2 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  // 選択中は薄い青色の背景
-                  color: isSelected ? Colors.blue[50] : null,
-                ),
-                child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 24)),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  /// 色選択エリア
-  Widget _buildColorSelector() {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.color, //色
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _colors.map((color) {
-            final isSelected = color == _selectedColor;
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedColor = color;
-                });
-              },
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Color(color),
-                  // 円形
-                  shape: BoxShape.circle,
-                  // 選択中は白い枠線
-                  border: Border.all(
-                    color: isSelected ? Colors.white : Colors.transparent,
-                    width: 3,
-                  ),
-                  // 影をつける
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            // ignore: deprecated_member_use
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ]
-                      : null,
-                ),
-                // 選択中はチェックマーク
-                child: isSelected
-                    ? const Icon(Icons.check, color: Colors.white, size: 24)
-                    : null,
-              ),
-            );
-          }).toList(),
         ),
       ],
     );

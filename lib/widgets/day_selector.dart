@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 
 /// DaySelector
 ///
@@ -12,9 +13,6 @@ class DaySelector extends StatelessWidget {
   final Function(bool) onEveryDayChanged;
   final Function(int) onDayToggle;
 
-  // 曜日の名前リスト
-  static const List<String> dayNames = ['月', '火', '水', '木', '金', '土', '日'];
-
   const DaySelector({
     super.key,
     required this.isEveryDay,
@@ -25,26 +23,31 @@ class DaySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '実施する曜日',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          l10n.daysOfWeek,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
 
         // 毎日 / 曜日指定の切り替えボタン
-        _buildToggleButtons(),
+        _buildToggleButtons(l10n),
 
         // 曜日選択UI（曜日指定の場合のみ表示）
-        if (!isEveryDay) ...[const SizedBox(height: 16), _buildDayButtons()],
+        if (!isEveryDay) ...[
+          const SizedBox(height: 16),
+          _buildDayButtons(l10n),
+        ],
       ],
     );
   }
 
   /// 毎日 / 曜日指定の切り替えボタン
-  Widget _buildToggleButtons() {
+  Widget _buildToggleButtons(AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
@@ -61,7 +64,7 @@ class DaySelector extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  '毎日',
+                  l10n.everyday,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -87,7 +90,7 @@ class DaySelector extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  '曜日を選択',
+                  l10n.selectDays,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -103,7 +106,18 @@ class DaySelector extends StatelessWidget {
   }
 
   /// 曜日選択ボタン
-  Widget _buildDayButtons() {
+  Widget _buildDayButtons(AppLocalizations l10n) {
+    // 曜日の名前リスト（多言語対応）
+    final dayNames = [
+      l10n.monday,
+      l10n.tuesday,
+      l10n.wednesday,
+      l10n.thursday,
+      l10n.friday,
+      l10n.saturday,
+      l10n.sunday,
+    ];
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
