@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 
 /// DaySelector
 ///

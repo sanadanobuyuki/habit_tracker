@@ -12,6 +12,7 @@ import '../../widgets/themed_scaffold.dart';
 /// 役割:
 /// - 新しい習慣を追加する画面
 /// - 各種ウィジェットを組み合わせて習慣の設定を行う
+/// - EmojiSelector, ColorSelector, DaySelectorを使用
 class AddHabit extends StatefulWidget {
   const AddHabit({super.key});
 
@@ -39,6 +40,9 @@ class _AddHabitState extends State<AddHabit> {
   // 選択された曜日のリスト
   final List<int> _selectedDays = [];
 
+  // 保存中かどうか（ボタンの二重押し防止）
+  bool _isSaving = false;
+
   @override
   void dispose() {
     // dispose() について:
@@ -60,18 +64,21 @@ class _AddHabitState extends State<AddHabit> {
       return;
     }
 
-    // データベースに保存
-    // 新しい習慣IDを生成
-    // DateTime.now().millisecondsSinceEpoch = 現在の日時をミリ秒で取得
-    final habitId = 'habit_${DateTime.now().millisecondsSinceEpoch}';
-
-    // 曜日データを文字列に変換
-    final daysOfWeek = _getDaysOfWeekString();
-
-    //現在の日時取得
-    final now = DateTime.now();
+    // 保存中フラグをONにする（ボタンの二重押し防止）
+    setState(() => _isSaving = true);
 
     try {
+      // データベースに保存
+      // 新しい習慣IDを生成
+      // DateTime.now().millisecondsSinceEpoch = 現在の日時をミリ秒で取得
+      final habitId = 'habit_${DateTime.now().millisecondsSinceEpoch}';
+
+      // 曜日データを文字列に変換
+      final daysOfWeek = _getDaysOfWeekString();
+
+      //現在の日時取得
+      final now = DateTime.now();
+
       await _db.insertHabit(
         id: habitId,
         name: _nameController.text.trim(),
@@ -107,10 +114,6 @@ class _AddHabitState extends State<AddHabit> {
 
       //実績チェック
       //習慣を作成した後、habit_count系の実績をチェック
-      //処理の流れ
-      //1.checkHabitContAchievements()を呼ぶ
-      //2.新しく解除された実績のリストが返ってくる
-      //3.リストがからでなければ実績解除の通知を表示
       final newAchievements = await _achievementController
           .checkHabitCountAchievements();
       // ignore: use_build_context_synchronously
@@ -120,14 +123,11 @@ class _AddHabitState extends State<AddHabit> {
         _showSnackBar(l10n.habitSaved); //習慣を保存しました
 
         //新しく解除された実績があれば通知
-        //isNotEmpty
-        //リストがからでない＝新しい実績が解除された
         if (newAchievements.isNotEmpty) {
           //複数解除されることもあるが最初の一つだけ通知
           final achievement = newAchievements.first;
 
           //スナックバーで通知
-          //後でダイアログに変更する
           _showSnackBar(l10n.achievementUnlocked(achievement.name)); //実績解除
         }
 
@@ -137,6 +137,11 @@ class _AddHabitState extends State<AddHabit> {
       // 保存失敗
       if (mounted) {
         _showSnackBar('エラーが発生しました: $e');
+      }
+    } finally {
+      // 処理が終わったら保存中フラグをOFFにする
+      if (mounted) {
+        setState(() => _isSaving = false);
       }
     }
   }
@@ -150,8 +155,6 @@ class _AddHabitState extends State<AddHabit> {
     final l10n = AppLocalizations.of(context);
     // 入力チェック
     if (_nameController.text.trim().isEmpty) {
-      // SnackBar について:
-      // 画面下部に一時的にメッセージを表示
       _showSnackBar(l10n.pleaseEnterHabitName); // 習慣名を入力してください
       return false;
     }
@@ -229,21 +232,6 @@ class _AddHabitState extends State<AddHabit> {
     return ThemedScaffold(
       appBar: AppBar(
         title: Text(l10n.addHabit), // 習慣を追加
-        // actions について:
-        // AppBarの右側にボタンを配置
-        actions: [
-          TextButton(
-            onPressed: _saveHabit,
-            child: Text(
-              l10n.save, //保存
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         // SingleChildScrollView について:
@@ -286,7 +274,10 @@ class _AddHabitState extends State<AddHabit> {
               onEveryDayChanged: _onEveryDayChanged,
               onDayToggle: _onDayToggle,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
+
+            // 保存ボタン
+            _buildSaveButton(),
           ],
         ),
       ),
@@ -308,10 +299,43 @@ class _AddHabitState extends State<AddHabit> {
           controller: _nameController,
           decoration: InputDecoration(
             hintText: l10n.habitNameHint, //例: 朝の運動
-            border: const OutlineInputBorder(),
+            // suffixIcon = テキストフィールド右端のアイコン
+            suffixIcon: _selectedEmoji.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      _selectedEmoji,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                  )
+                : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
+          maxLength: 30,
         ),
       ],
+    );
+  }
+
+  /// 保存ボタン
+  Widget _buildSaveButton() {
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: _isSaving ? null : _saveHabit,
+        child: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(l10n.save, style: const TextStyle(fontSize: 16)),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/l10n/app_localizations.dart';
 
 /// ColorSelector
 ///
@@ -9,7 +10,7 @@ class ColorSelector extends StatelessWidget {
   final int selectedColor;
   final Function(int) onColorSelected;
 
-  // 利用可能な色リスト
+  // 利用可能な色リスト（14色）
   final List<int> availableColors;
 
   const ColorSelector({
@@ -23,16 +24,21 @@ class ColorSelector extends StatelessWidget {
       0xFFF59E0B, // 黄
       0xFF8B5CF6, // 紫
       0xFFEC4899, // ピンク
+      0xFFFF8A65, // オレンジ
+      0xFF4DB6AC, // ティール
+      0xFFA1887F, // 茶
+      0xFF90A4AE, // グレー
     ],
   });
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '色',
+        Text(
+          l10n!.color, // 色
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -58,8 +64,7 @@ class ColorSelector extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            // ignore: deprecated_member_use
-                            color: Color(color).withOpacity(0.5),
+                            color: Color(color).withValues(alpha: 0.5),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
