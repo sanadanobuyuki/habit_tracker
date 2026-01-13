@@ -430,28 +430,24 @@ class DatabaseService {
     //曜日を取得(1=月曜、7=日曜)
     final weekday = dateTime.weekday;
 
-    //その日の記録を取得
-    final results = await db.rawQuery(
+    final allHabits = await db.rawQuery(
       '''
-      SELECT 
+      SELECT
         h.id as habit_id,
-        h.days_of_week,
-        hr.completed
-      FROM habit_records hr
-      INNER JOIN habits h ON hr.habit_id = h.id 
-      WHERE hr.date = ?
-        AND h.created_at <= ?
+        h.days_of_week
+      FROM habits h
+      WHERE h.created_at <= ?
         AND (h.is_deleted = 0 OR h.deleted_at > ? OR h.deleted_at IS NULL)
-    ''',
-      [date, endOfDay, endOfDay],
+      ''',
+      [endOfDay,endOfDay],
     );
 
-    if (results.isEmpty) {
+    if (allHabits.isEmpty) {
       return 0.0;
     }
 
     //曜日設定を考慮して対象の習慣をフィルタリング
-    final targetHabits = results.where((result) {
+    final targetHabits = allHabits.where((result) {
       final daysOfWeek = result['days_of_week'] as String?;
 
       //daysOfWeekがnullまたは空＝毎日対象
@@ -470,20 +466,34 @@ class DatabaseService {
       return 0.0;
     }
 
-    //達成した習慣の数をカウント
-    //conpletedがnullの場合は０(未達成)として扱う
-    final completedCount = targetHabits.where((result) {
-      final completed = result['completed'] as int;
-      return completed == 1;
-    }).length;
+    final records = await db.rawQuery(
+      '''
+      SELECT 
+        hr.habit_id,
+        hr.completed
+      FROM habit_records hr
+      WHERE hr.date = ?
+      ''',
+      [date],
+    );
 
-    print('📅 日付: $date');
-    print('📋 全習慣数: ${results.length}');
-    print('🎯 対象習慣数: ${targetHabits.length}');
-    print('✅ 達成数: $completedCount');
-    print('📊 達成率: ${completedCount / targetHabits.length}');
+    // 記録をMapに変換（habit_id -> completed）
+    final recordMap = <String, int>{};
+    for (final record in records) {
+      recordMap[record['habit_id'] as String] = record['completed'] as int;
+    }
 
-    //達成率を計算
+    // 達成した習慣の数をカウント
+    int completedCount = 0;
+    for (final habit in targetHabits) {
+      final habitId = habit['habit_id'] as String;
+      final completed = recordMap[habitId] ?? 0; // 記録がなければ0（未達成）
+      if (completed == 1) {
+        completedCount++;
+      }
+    }
+
+    // 達成率を計算
     return completedCount / targetHabits.length;
   }
 
