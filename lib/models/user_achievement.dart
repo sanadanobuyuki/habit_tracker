@@ -1,4 +1,4 @@
-// user_achievement.dart
+// lib/models/user_achievement.dart
 //
 // 役割:
 // - ユーザーが解除した実績の記録を管理
@@ -127,14 +127,19 @@ class UserAchievement {
     };
   }
 
-  /// 解除日時を読みやすい形式で取得
+  /// 解除日時を読みやすい形式で取得（日本語専用）
+  ///
+  /// **非推奨**: 多言語化に対応していないため、
+  /// 代わりに AppLocalizations の formatDate() を使用してください
+  ///
   /// getter について:
   /// - 関数のように呼び出せるプロパティ
   /// - userAchievement.formattedDate のように使う
   /// 使い方:
   /// final userAchievement = UserAchievement(...);
   /// print(userAchievement.formattedDate);
-  /// // 出力: 2024年11月10
+  /// // 出力: 2024年11月10日
+  @Deprecated('Use AppLocalizations.formatDate() instead')
   String get formattedDate {
     // padLeft(2, '0') について:
     // - 2桁になるように左側を0で埋める
@@ -144,7 +149,7 @@ class UserAchievement {
         '${unlockedAt.day}日';
   }
 
-  /// 解除日時を短い形式で取得
+  /// 解除日時を短い形式で取得（言語非依存）
   /// 使い方:
   /// print(userAchievement.shortDate);
   /// // 出力: 2024/11/10

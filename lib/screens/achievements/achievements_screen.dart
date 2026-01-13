@@ -508,7 +508,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const Icon(Icons.check_circle, size: 16, color: Colors.green),
               const SizedBox(width: 4),
               Text(
-                userAchievement.formattedDate,
+                l10n.formatDate(userAchievement.unlockedAt), //解除日: 2024/11/10
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
@@ -534,7 +534,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
           // ヒント
           Text(
-            l10n.achievementCondition(achievement), //〇〇達成で解除
+            l10n.unlockCondition(
+              achievement.conditionValue,
+              l10n.achievementUnit(achievement.conditionType),
+            ), //解除条件: 〇〇を△△回達成
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],

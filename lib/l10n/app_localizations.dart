@@ -302,6 +302,59 @@ class AppLocalizations {
       locale.languageCode == 'ja'
       ? '${achievement.conditionValue}${achievement.unit}達成で解除'
       : 'Unlock at ${achievement.conditionValue}${achievement.unit}';
+  String achievementUnit(String conditionType) {
+    if (locale.languageCode == 'ja') {
+      // 日本語の単位
+      switch (conditionType) {
+        case 'habit_count':
+          return '個';
+        case 'total_days':
+          return '日';
+        case 'streak':
+          return '日連続';
+        default:
+          return '';
+      }
+    } else {
+      // 英語の単位（前にスペースを含める）
+      switch (conditionType) {
+        case 'habit_count':
+          return ' habits';
+        case 'total_days':
+          return ' days';
+        case 'streak':
+          return ' day streak';
+        default:
+          return '';
+      }
+    }
+  }
+
+  String formatDate(DateTime dateTime) {
+    if (locale.languageCode == 'ja') {
+      // 日本語: YYYY年MM月DD日
+      return '${dateTime.year}年${dateTime.month}月${dateTime.day}日';
+    } else {
+      // 英語: Month DD, YYYY
+      final monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      final monthName = monthNames[dateTime.month - 1];
+      return '$monthName ${dateTime.day}, ${dateTime.year}';
+    }
+  }
+
   String get availableByAchievement =>
       locale.languageCode == 'ja' ? '実績解除で利用可能' : 'Available by achievement';
   String get locked => locale.languageCode == 'ja' ? 'ロック中' : 'Locked';
