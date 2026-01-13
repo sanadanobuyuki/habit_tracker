@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
+import '../../l10n/app_localizations.dart';
 
 //画面上でどれだけ見えているかを検出するパッケージ
 import 'package:visibility_detector/visibility_detector.dart';
@@ -18,18 +19,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
   DateTime _currentMonth = DateTime.now();
 
   //達成率データをキャッシュ
-  Map<String , double> _completionRateCache={};
+  Map<String, double> _completionRateCache = {};
   //キャッシュの原理
   //非同期処理を事前に完了させ、画像描画時は同期的にメモリから取得
 
   //ローディング状態
-  bool _isLoading=false;
+  bool _isLoading = false;
 
   //最長連続達成日数
-  int _maxStreak=0;
+  int _maxStreak = 0;
 
   //今月の達成日数
-  int _thisMonthCompletedDays=0;
+  int _thisMonthCompletedDays = 0;
 
   //金色のグラデーション定義
   final LinearGradient _glowingGoldGradient = const LinearGradient(
@@ -40,7 +41,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     //stops グラデーションの各色が始まる位置を0.0から1.0の範囲で指定
     stops: [0.0, 0.45, 0.7, 1.0],
     colors: [
-      Color(0xFFFFF8E1), // 強いハイライト（光）
+      Color(0xFFFFF8E1), // 強いハイライト(光)
       Color(0xFFFFE082), // 明るい金
       Color(0xFFD4AF37), // ベース金
       Color(0xFFB8962E), // 影
@@ -62,79 +63,79 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //先に全データを取得してメモリに保存
   Future<void> _loadMonthRecord() async {
     //ロード中なら何もしない
-    if(_isLoading) return;
+    if (_isLoading) return;
 
-    setState(()=> _isLoading=true);
-
-    //月の最初の日
-    final firstDay=DateTime(_currentMonth.year,_currentMonth.month,1);
+    setState(() => _isLoading = true);
 
     //月の最初の日
-    final lastDay=DateTime(_currentMonth.year,_currentMonth.month+1,0);
+    final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
+
+    //月の最初の日
+    final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
 
     //新しいキャッシュを作成
-    final newCache=<String,double>{};
+    final newCache = <String, double>{};
 
     //今月の達成日数をカウント
-    int completedDaysCount=0;
+    int completedDaysCount = 0;
 
     //各日付の達成率を取得
     //その月のすべての日付の達成率を一度に取得
-    for(int day=1;day<=lastDay.day;day++){
-      final date=DateTime(_currentMonth.year,_currentMonth.month,day);
-      final dateString=_formatDate(date);
+    for (int day = 1; day <= lastDay.day; day++) {
+      final date = DateTime(_currentMonth.year, _currentMonth.month, day);
+      final dateString = _formatDate(date);
 
       //達成率を取得してキャッシュに保存
-      final rate=await _db.getCompletionRateForDate(dateString);
+      final rate = await _db.getCompletionRateForDate(dateString);
 
       //メモリに保存
-      newCache[dateString]=rate;
+      newCache[dateString] = rate;
 
       //達成した日をカウント
-      if(rate>0.0){
+      if (rate > 0.0) {
         completedDaysCount++;
       }
     }
 
     //最長連続達成日数を計算
-    final maxStreak=await _calculateMaxStreak(firstDay, lastDay);
+    final maxStreak = await _calculateMaxStreak(firstDay, lastDay);
 
     if (mounted) {
-      setState((){
+      setState(() {
         //一度に反映するからちらつかない
-        _completionRateCache=newCache;
+        _completionRateCache = newCache;
 
         //今月の達成日数
-        _thisMonthCompletedDays=completedDaysCount;
+        _thisMonthCompletedDays = completedDaysCount;
 
         //最長連続達成日数
-        _maxStreak=maxStreak;
+        _maxStreak = maxStreak;
 
-        _isLoading=false;
+        _isLoading = false;
       });
     }
   }
 
   //最長連続達成日数を計算
-  Future<int> _calculateMaxStreak(DateTime firstDay,DateTime lastDay) async{
-    int maxStreak=0;
-    int currentStreak=0;
+  Future<int> _calculateMaxStreak(DateTime firstDay, DateTime lastDay) async {
+    int maxStreak = 0;
+    int currentStreak = 0;
 
-    for(int day =1; day <= lastDay.day; day++){
-      final date=DateTime(_currentMonth.year,_currentMonth.month,day);
-      final dateString=_formatDate(date);
+    for (int day = 1; day <= lastDay.day; day++) {
+      final date = DateTime(_currentMonth.year, _currentMonth.month, day);
+      final dateString = _formatDate(date);
 
-      final rate=await _db.getCompletionRateForDate(dateString);
+      final rate = await _db.getCompletionRateForDate(dateString);
 
-      if(rate>0.0){
+      if (rate > 0.0) {
         //達成で連続カウント増加
         currentStreak++;
-        if(currentStreak > maxStreak){
-          maxStreak=currentStreak;
+        if (currentStreak > maxStreak) {
+          maxStreak = currentStreak;
         }
-      }else{
+      } else {
         //未達成で連続リセット
-        currentStreak=0;
+        currentStreak = 0;
       }
     }
 
@@ -195,20 +196,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (rate <= 0.2) return Colors.red.shade100;
     if (rate <= 0.4) return Colors.orange.shade200;
     if (rate <= 0.6) return Colors.yellow.shade400;
-    if (rate <= 0.8) return  Colors.lightGreen.shade500;
+    if (rate <= 0.8) return Colors.lightGreen.shade500;
     if (rate < 1.0) return Colors.green.shade500;
     return const Color(0xFFD4AF37); // 100%
   }
 
   //指定日の達成率を取得
-  double? _getCompletionRate(DateTime date){
+  double? _getCompletionRate(DateTime date) {
     final dateString = _formatDate(date);
 
     //データベースから直接達成率を取得
     return _completionRateCache[dateString];
   }
 
-  //今日の達成率を取得（デバッグ用）
+  //今日の達成率を取得(デバッグ用)
   // double _getTodayCompletionRate(){
   //   return _getCompletionRate(DateTime.now()) ?? 0.0;
   // }
@@ -220,14 +221,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         '${date.day.toString().padLeft(2, '0')}';
   }
 
-  void _showLegendDialog(){
+  void _showLegendDialog() {
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
         //ダイアログ全体を角丸にする
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           decoration: BoxDecoration(
@@ -237,11 +238,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               end: Alignment.bottomRight,
               colors: [
                 Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.surface.withValues(alpha:0.95),
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
               ],
             ),
           ),
-          child:SingleChildScrollView(
+          child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -249,7 +250,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient( //グラデーション
+                    gradient: LinearGradient(
+                      //グラデーション
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
@@ -259,7 +261,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         Theme.of(context).colorScheme.secondaryContainer,
                       ],
                     ),
-                    borderRadius: const BorderRadius.only( //上部の角だけ丸くする
+                    borderRadius: const BorderRadius.only(
+                      //上部の角だけ丸くする
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
@@ -268,22 +271,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     children: [
                       Icon(
                         Icons.palette_outlined,
-                        size:28,
+                        size: 28,
                         color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "達成率の凡例",
+                        l10n.completionRateLegend,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 //コンテンツ部分
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -296,7 +301,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       // const SizedBox(height: 20),
 
                       //凡例リスト
-                      _buildLegendItem("未記録", Colors.grey.shade200),
+                      _buildLegendItem(l10n.unrecorded, Colors.grey.shade200),
                       const SizedBox(height: 8),
                       _buildLegendItem("～20%", Colors.red.shade100),
                       const SizedBox(height: 8),
@@ -308,7 +313,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       const SizedBox(height: 8),
                       _buildLegendItem("81～99%", Colors.green.shade500),
                       const SizedBox(height: 8),
-                      _buildLegendItem("100%",null,gradient: _glowingGoldGradient),
+                      _buildLegendItem(
+                        "100%",
+                        null,
+                        gradient: _glowingGoldGradient,
+                      ),
 
                       const SizedBox(height: 20),
 
@@ -316,7 +325,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       FilledButton.icon(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.check),
-                        label: Text("閉じる"),
+                        label: Text(l10n.close),
                         style: FilledButton.styleFrom(
                           //symmetric:対象的な余白
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -356,21 +365,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //AppBarを構築
   AppBar _buildAppBar() {
+    final l10n = AppLocalizations.of(context);
+
     return AppBar(
-      title: const Text("カレンダー"),
+      title: Text(l10n.calendar),
       actions: [
         //凡例表示
         IconButton(
           onPressed: _showLegendDialog,
           icon: const Icon(Icons.help_outline),
-          tooltip: "凡例を表示",
+          tooltip: l10n.showLegend,
         ),
 
         //今月に戻るボタン
         IconButton(
           onPressed: _goToToday,
           icon: const Icon(Icons.today),
-          tooltip: '今月に戻る',
+          tooltip: l10n.backToThisMonth,
         ),
       ],
     );
@@ -404,6 +415,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   //年月ヘッダー
   Widget _buildMonthHeader() {
+    final l10n = AppLocalizations.of(context);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -411,12 +424,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
         IconButton(
           onPressed: _previousMonth,
           icon: const Icon(Icons.chevron_left),
-          tooltip: "前月",
+          tooltip: l10n.previousMonth,
         ),
 
         //年月表示
         Text(
-          '${_currentMonth.year}年${_currentMonth.month}月',
+          _formatYearMonth(_currentMonth),
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
 
@@ -424,29 +437,67 @@ class _CalendarScreenState extends State<CalendarScreen> {
         IconButton(
           onPressed: _nextMonth,
           icon: const Icon(Icons.chevron_right),
-          tooltip: "次月",
+          tooltip: l10n.nextMonth,
         ),
       ],
     );
   }
 
+  //年月を言語に応じてフォーマット
+  String _formatYearMonth(DateTime date) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n.locale.languageCode == 'ja') {
+      return '${date.year}年${date.month}月';
+    } else {
+      final monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      return '${monthNames[date.month - 1]} ${date.year}';
+    }
+  }
+
   //曜日ヘッダー
   Widget _buildWeekdayHeader() {
+    final l10n = AppLocalizations.of(context);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: const [
-        Text("月", style: TextStyle(fontWeight: FontWeight.bold)),
-        Text("火", style: TextStyle(fontWeight: FontWeight.bold)),
-        Text("水", style: TextStyle(fontWeight: FontWeight.bold)),
-        Text("木", style: TextStyle(fontWeight: FontWeight.bold)),
-        Text("金", style: TextStyle(fontWeight: FontWeight.bold)),
+      children: [
+        Text(l10n.monday, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(l10n.tuesday, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(
-          "土",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+          l10n.wednesday,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         Text(
-          "日",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+          l10n.thursday,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        Text(l10n.friday, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          l10n.saturday,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        Text(
+          l10n.sunday,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.red,
+          ),
         ),
       ],
     );
@@ -506,18 +557,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     //キャッシュから達成率を取得
     //今日の達成率をデータベースから直接取得
     final rate = _getCompletionRate(date);
-    final scheme=Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
     //達成率がまだロードされていない場合
-    if(rate==null){
+    if (rate == null) {
       return Container(
         margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(8),
-          border: isToday
-            ? Border.all(color: scheme.primary,width: 3)
-            : null,
+          border: isToday ? Border.all(color: scheme.primary, width: 3) : null,
         ),
         child: Center(
           child: Text(
@@ -532,28 +581,26 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     //達成率がロード済みの場合
-    final color=_getHeatColor(rate);
+    final color = _getHeatColor(rate);
 
     //100%達成の場合はグラデーションを適用
-    final bool isPerfect=rate>=1.0;
+    final bool isPerfect = rate >= 1.0;
 
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         //100%の時はグラデーション、それ以外は単色
-        gradient: isPerfect ? _glowingGoldGradient:null,
+        gradient: isPerfect ? _glowingGoldGradient : null,
         color: isPerfect ? null : color,
         borderRadius: BorderRadius.circular(8),
-        border: isToday
-          ? Border.all(color: scheme.primary,width: 3)
-          : null,
+        border: isToday ? Border.all(color: scheme.primary, width: 3) : null,
       ),
       child: Center(
         child: Text(
           "$day",
           style: TextStyle(
             color: rate > 0.0 ? Colors.black : scheme.onSurface,
-            fontWeight:  isToday ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ),
@@ -569,8 +616,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   //統計情報カードを構築
-  Widget _buildStatsCard(){
-    final colorScheme =Theme.of(context).colorScheme;
+  Widget _buildStatsCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -590,14 +638,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.bar_chart,
-                color: colorScheme.primary,
-                size:24,
-              ),
+              Icon(Icons.bar_chart, color: colorScheme.primary, size: 24),
               const SizedBox(width: 8),
               Text(
-                "${_currentMonth.year}年${_currentMonth.month}月の統計",
+                _formatMonthStatTitle(_currentMonth),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -615,9 +659,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.local_fire_department,
-                  label: "最長連続達成",
-                  value: '$_maxStreak日',
-                  color:Colors.orange,
+                  label: _formatStreakLabel(),
+                  value: _formatDaysValue(_maxStreak),
+                  color: Colors.orange,
                 ),
               ),
               const SizedBox(width: 16),
@@ -626,9 +670,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Expanded(
                 child: _buildStatItem(
                   icon: Icons.check_circle,
-                  label: "${_currentMonth.month}月の達成日数",
-                  value: '$_thisMonthCompletedDays日',
-                  color:Colors.green,
+                  label: _formatMonthCompletedLabel(_currentMonth.month),
+                  value: _formatDaysValue(_thisMonthCompletedDays),
+                  color: Colors.green,
                 ),
               ),
             ],
@@ -636,6 +680,74 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ],
       ),
     );
+  }
+
+  //統計タイトルをフォーマット
+  String _formatMonthStatTitle(DateTime date) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n.locale.languageCode == 'ja') {
+      return '${date.year}年${date.month}月の統計';
+    } else {
+      final monthNames = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      return '${monthNames[date.month - 1]} ${date.year} Statistics';
+    }
+  }
+
+  //連続達成ラベルをフォーマット
+  String _formatStreakLabel() {
+    final l10n = AppLocalizations.of(context);
+    if (l10n.locale.languageCode == 'ja') {
+      return '最長連続達成';
+    } else {
+      return 'Longest Streak';
+    }
+  }
+
+  //月の達成日数ラベルをフォーマット
+  String _formatMonthCompletedLabel(int month) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n.locale.languageCode == 'ja') {
+      return '${month}月の達成日数';
+    } else {
+      final monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      return '${monthNames[month - 1]} Completed';
+    }
+  }
+
+  //日数の値をフォーマット
+  String _formatDaysValue(int days) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n.locale.languageCode == 'ja') {
+      return '$days日';
+    } else {
+      return days == 1 ? '$days day' : '$days days';
+    }
   }
 
   //統計の各項目を構築
@@ -650,18 +762,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 32,
-          ),
+          Icon(icon, color: color, size: 32),
           const SizedBox(height: 8),
           Text(
             value,
@@ -678,6 +783,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -720,10 +826,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // }
 
   //凡例の各項目を構築
-  Widget _buildLegendItem(String label, Color? color,{Gradient? gradient, IconData? icon}) {
+  Widget _buildLegendItem(
+    String label,
+    Color? color, {
+    Gradient? gradient,
+    IconData? icon,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration:BoxDecoration(
+      decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -746,7 +857,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             height: 32,
             decoration: BoxDecoration(
               gradient: gradient,
-              color: gradient==null ? color : null,
+              color: gradient == null ? color : null,
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
@@ -763,19 +874,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
 
           //アイコン
-          if(icon != null)
+          if (icon != null)
             Icon(
               icon,
               size: 24,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.6),
             ),
         ],
       ),
