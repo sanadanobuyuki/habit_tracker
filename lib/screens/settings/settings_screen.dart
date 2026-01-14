@@ -47,8 +47,8 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           // 開発者向けセクション
-          _buildSectionHeader('開発者向け'),
-          _buildDangerButton(context),
+          // _buildSectionHeader('開発者向け'),
+          // _buildDangerButton(context),
         ],
       ),
     );
