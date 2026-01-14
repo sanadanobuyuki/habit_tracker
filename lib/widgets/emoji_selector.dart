@@ -76,7 +76,7 @@ class EmojiSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n!.emoji, // 絵文字
+          l10n.emoji, // 絵文字
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),

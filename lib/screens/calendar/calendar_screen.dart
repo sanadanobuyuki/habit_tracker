@@ -618,7 +618,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   //統計情報カードを構築
   Widget _buildStatsCard() {
     final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -720,7 +719,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   String _formatMonthCompletedLabel(int month) {
     final l10n = AppLocalizations.of(context);
     if (l10n.locale.languageCode == 'ja') {
-      return '${month}月の達成日数';
+      return '$month月の達成日数';
     } else {
       final monthNames = [
         'Jan',

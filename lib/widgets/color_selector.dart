@@ -38,7 +38,7 @@ class ColorSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n!.color, // 色
+          l10n.color, // 色
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
