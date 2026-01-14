@@ -48,7 +48,7 @@ class ThemeProvider extends ChangeNotifier {
   // - contains() で高速に存在チェックができる
   // - 重複を気にせず add() できる
   Set<String> _unlockedThemes = {
-    'light', // デフォルトテーマ（最初から使える）
+    'first', // デフォルトテーマ（最初から使える）
   };
   // ========== 【追加】ここまで ==========
 
@@ -98,9 +98,9 @@ class ThemeProvider extends ChangeNotifier {
   final List<AppTheme> _themes = [
     // ========== デフォルトテーマ（最初から使える） ==========
     AppTheme(
-      id: 'light',
-      name: 'ライト',
-      description: '明るいテーマ',
+      id: 'first',
+      name: '初期テーマ',
+      description: '初期のテーマ設定',
       pattern: BackgroundPattern.solid,
       isDefault: true, // 【追加】
       themeData: ThemeData(
@@ -113,7 +113,7 @@ class ThemeProvider extends ChangeNotifier {
         //primarySwatch について
         //アプリの主要な色を設定
         //Material Designのカラーパレットから選択
-        primarySwatch: Colors.grey,
+        primarySwatch: Colors.blue,
 
         // useMaterial3 について
         //Material Design 3 (MD3) を使用するかどうか
@@ -131,7 +131,7 @@ class ThemeProvider extends ChangeNotifier {
         // appBarTheme について
         //AppBarのテーマをカスタマイズ
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 235, 235, 235),
+          backgroundColor: Color.fromARGB(255, 100, 100, 100),
           foregroundColor: Colors.white,
         ),
       ),
@@ -141,7 +141,7 @@ class ThemeProvider extends ChangeNotifier {
       name: 'ダーク',
       description: '暗いテーマ',
       pattern: BackgroundPattern.solid,
-      isDefault: true, // 【追加】
+      isDefault: true,
       themeData: ThemeData(
         brightness: Brightness.dark,
         primarySwatch: Colors.purple,

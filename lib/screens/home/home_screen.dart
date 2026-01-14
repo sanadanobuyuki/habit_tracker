@@ -52,19 +52,19 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 2. 習慣リスト、今日の達成記録、連続達成回数を取得
   /// 3. 画面を更新
   Future<void> _loadHabits() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  // HabitControllerから習慣データと今日の記録を取得
-  final result = await _controller.loadHabits();
+    // HabitControllerから習慣データと今日の記録を取得
+    final result = await _controller.loadHabits();
 
-  // 画面を更新
-  setState(() {
-    _habits = result.habits;
-    _todayRecords = result.todayRecords;
-    _streakCounts = result.streakCounts;
-    _isLoading = false;
-  });
-}
+    // 画面を更新
+    setState(() {
+      _habits = result.habits;
+      _todayRecords = result.todayRecords;
+      _streakCounts = result.streakCounts;
+      _isLoading = false;
+    });
+  }
 
   // 習慣の達成状態を切り替える
   //
