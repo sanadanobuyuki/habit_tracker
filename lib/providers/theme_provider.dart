@@ -49,8 +49,6 @@ class ThemeProvider extends ChangeNotifier {
   // - 重複を気にせず add() できる
   Set<String> _unlockedThemes = {
     'light', // デフォルトテーマ（最初から使える）
-    'pink',
-    //'dark', // デフォルトテーマ（最初から使える）
   };
   // ========== 【追加】ここまで ==========
 
@@ -115,7 +113,7 @@ class ThemeProvider extends ChangeNotifier {
         //primarySwatch について
         //アプリの主要な色を設定
         //Material Designのカラーパレットから選択
-        primarySwatch: Colors.purple,
+        primarySwatch: Colors.grey,
 
         // useMaterial3 について
         //Material Design 3 (MD3) を使用するかどうか
@@ -133,7 +131,7 @@ class ThemeProvider extends ChangeNotifier {
         // appBarTheme について
         //AppBarのテーマをカスタマイズ
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.purple,
+          backgroundColor: Color.fromARGB(255, 235, 235, 235),
           foregroundColor: Colors.white,
         ),
       ),
@@ -190,6 +188,24 @@ class ThemeProvider extends ChangeNotifier {
         cardColor: Colors.white,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+        ),
+      ),
+    ),
+    AppTheme(
+      id: 'red',
+      name: 'レッド',
+      description: '赤基調のテーマ',
+      pattern: BackgroundPattern.solid,
+      isDefault: false, // 【追加】実績で開放
+      themeData: ThemeData(
+        brightness: Brightness.light,
+        primarySwatch: Colors.red,
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF0FFF4),
+        cardColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.red,
           foregroundColor: Colors.white,
         ),
       ),

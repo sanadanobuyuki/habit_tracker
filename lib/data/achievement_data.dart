@@ -19,7 +19,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'habit_count',
     'condition_value': 5,
     'rarity': null,
-    'theme_id': 'dark_checkered',
+    'theme_id': 'green',
   },
   {
     'id': 'ach_habit_10',
@@ -28,7 +28,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'habit_count',
     'condition_value': 10,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'dark_checkered',
   },
 
   // ========== 累計達成日数系 ==========
@@ -48,7 +48,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'total_days',
     'condition_value': 7,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'pink',
   },
   {
     'id': 'ach_total_30',
@@ -57,7 +57,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'total_days',
     'condition_value': 30,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'blue_checkered',
   },
   {
     'id': 'ach_total_100',
@@ -66,7 +66,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'total_days',
     'condition_value': 100,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'pink_dotted',
   },
 
   // ========== 連続達成日数系 ==========
@@ -77,7 +77,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'streak',
     'condition_value': 3,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'red',
   },
   {
     'id': 'ach_streak_7',
@@ -86,7 +86,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'streak',
     'condition_value': 7,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'green_striped',
   },
   {
     'id': 'ach_streak_30',
@@ -95,7 +95,7 @@ final List<Map<String, dynamic>> initialAchievements = [
     'condition_type': 'streak',
     'condition_value': 30,
     'rarity': null,
-    'theme_id': null,
+    'theme_id': 'gradient_sunset',
   },
 ];
 
