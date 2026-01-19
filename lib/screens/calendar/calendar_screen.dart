@@ -223,6 +223,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _showLegendDialog() {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
@@ -237,8 +238,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+                colorScheme.surface,
+                colorScheme.surface.withValues(alpha: 0.95),
               ],
             ),
           ),
@@ -250,17 +251,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      //グラデーション
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        //アプリの主要な色 primary
-                        Theme.of(context).colorScheme.primaryContainer,
-                        //補助的な色 secondary
-                        Theme.of(context).colorScheme.secondaryContainer,
-                      ],
-                    ),
+                    //アプリの主要な色 primary
+                    color: colorScheme.primary,
                     borderRadius: const BorderRadius.only(
                       //上部の角だけ丸くする
                       topLeft: Radius.circular(20),
@@ -272,7 +264,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       Icon(
                         Icons.palette_outlined,
                         size: 28,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: colorScheme.onPrimary,
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -280,9 +272,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                     ],
@@ -327,6 +317,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         icon: const Icon(Icons.check),
                         label: Text(l10n.close),
                         style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
                           //symmetric:対象的な余白
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -789,41 +781,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  //今日の達成率表示を構築
-  // Widget _buildTodayCompletionRate() {
-  //   //今日の達成率を表示するやつ(デバッグ用)
-  //   final rate=_getTodayCompletionRate();
-  //   final percentage=(rate*100).toInt();
-
-  //   final bool isPerfect= rate >= 1.0;
-
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(
-  //       horizontal: 12,
-  //       vertical: 6,
-  //     ),
-  //     decoration: BoxDecoration(
-  //       gradient: isPerfect ? _glowingGoldGradient:null,
-  //       color: isPerfect ? null : _getHeatColor(rate),
-  //       borderRadius: BorderRadius.circular(12),
-  //       border: Border.all(
-  //         color: Colors.grey.shade300,
-  //         width: 1,
-  //       ),
-  //     ),
-  //     child: Text(
-  //       "今日: $percentage%",
-  //       style: TextStyle(
-  //         color: rate > 0.0
-  //           ? Colors.black
-  //           :Theme.of(context).colorScheme.onSurface,
-  //         fontSize: 14,
-  //         fontWeight: FontWeight.bold,
-  //       ),
-  //     ),
-  //   );
-  // }
-
   //凡例の各項目を構築
   Widget _buildLegendItem(
     String label,
@@ -831,13 +788,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     Gradient? gradient,
     IconData? icon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          color: colorScheme.outline.withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
@@ -873,7 +832,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color:colorScheme.onSurface,
+              ),
             ),
           ),
 
@@ -882,9 +845,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Icon(
               icon,
               size: 24,
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.6),
+              color: colorScheme.primary.withValues(alpha: 0.6),
             ),
         ],
       ),
