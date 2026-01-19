@@ -20,102 +20,104 @@ class ThemeSelectorScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return ThemedScaffold(
       appBar: AppBar(title: Text(l10n.themeSelection)), // テーマ選択
-      body: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          // アンロック済みとロック中のテーマを分ける
-          final unlockedThemes = themeProvider.themes
-              .where((theme) => themeProvider.isThemeUnlocked(theme.id))
-              .toList();
-          final lockedThemes = themeProvider.themes
-              .where((theme) => !themeProvider.isThemeUnlocked(theme.id))
-              .toList();
+      body: SafeArea(
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            // アンロック済みとロック中のテーマを分ける
+            final unlockedThemes = themeProvider.themes
+                .where((theme) => themeProvider.isThemeUnlocked(theme.id))
+                .toList();
+            final lockedThemes = themeProvider.themes
+                .where((theme) => !themeProvider.isThemeUnlocked(theme.id))
+                .toList();
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // アンロック済みセクション
-              if (unlockedThemes.isNotEmpty) ...[
-                _buildSectionHeader(
-                  context,
-                  icon: Icons.check_circle,
-                  iconColor: Colors.green,
-                  title: l10n.availableThemes, // 利用可能なテーマ
-                  count: unlockedThemes.length,
-                ),
-                const SizedBox(height: 12),
-                ...unlockedThemes.map((theme) {
-                  final isSelected = themeProvider.currentThemeId == theme.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildThemeCard(
-                      context,
-                      theme,
-                      isSelected,
-                      false, // isLocked = false
-                      () => themeProvider.setTheme(theme.id),
-                    ),
-                  );
-                }),
-              ],
-
-              // ロック中セクション
-              if (lockedThemes.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _buildSectionHeader(
-                  context,
-                  icon: Icons.lock,
-                  iconColor: Colors.orange,
-                  title: l10n.lockedThemes, // ロック中のテーマ
-                  count: lockedThemes.length,
-                ),
-                const SizedBox(height: 8),
-                // ヒントメッセージ
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    // ignore: deprecated_member_use
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    // ignore: deprecated_member_use
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // アンロック済みセクション
+                if (unlockedThemes.isNotEmpty) ...[
+                  _buildSectionHeader(
+                    context,
+                    icon: Icons.check_circle,
+                    iconColor: Colors.green,
+                    title: l10n.availableThemes, // 利用可能なテーマ
+                    count: unlockedThemes.length,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: Colors.orange[700],
-                        size: 20,
+                  const SizedBox(height: 12),
+                  ...unlockedThemes.map((theme) {
+                    final isSelected = themeProvider.currentThemeId == theme.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildThemeCard(
+                        context,
+                        theme,
+                        isSelected,
+                        false, // isLocked = false
+                        () => themeProvider.setTheme(theme.id),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.unlockByAchievement, // 実績解除で利用可能
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.orange[700],
+                    );
+                  }),
+                ],
+
+                // ロック中セクション
+                if (lockedThemes.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _buildSectionHeader(
+                    context,
+                    icon: Icons.lock,
+                    iconColor: Colors.orange,
+                    title: l10n.lockedThemes, // ロック中のテーマ
+                    count: lockedThemes.length,
+                  ),
+                  const SizedBox(height: 8),
+                  // ヒントメッセージ
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      // ignore: deprecated_member_use
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.orange[700],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.unlockByAchievement, // 実績解除で利用可能
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.orange[700],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                ...lockedThemes.map((theme) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildThemeCard(
-                      context,
-                      theme,
-                      false, // isSelected = false
-                      true, // isLocked = true
-                      () => _showLockedDialog(context, theme),
+                      ],
                     ),
-                  );
-                }),
+                  ),
+                  ...lockedThemes.map((theme) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildThemeCard(
+                        context,
+                        theme,
+                        false, // isSelected = false
+                        true, // isLocked = true
+                        () => _showLockedDialog(context, theme),
+                      ),
+                    );
+                  }),
+                ],
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

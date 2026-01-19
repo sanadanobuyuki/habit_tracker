@@ -279,8 +279,8 @@ class AppLocalizations {
   String get todaysCompletionRate =>
       locale.languageCode == 'ja' ? '今日の達成率' : "Today's Completion Rate";
   String completedCount(int completed, int total) => locale.languageCode == 'ja'
-      ? '$completed/$total 完了'
-      : '$completed/$total completed';
+      ? '$total/$completed 完了'
+      : '$total/$completed completed';
 
   // カレンダー画面
   String get completionRateLegend =>

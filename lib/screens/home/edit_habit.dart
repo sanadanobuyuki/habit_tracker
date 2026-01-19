@@ -172,47 +172,49 @@ class _EditHabitState extends State<EditHabit> {
         // 自動的に「戻る」ボタンが表示される
       ),
 
-      body: SingleChildScrollView(
-        // SingleChildScrollView について:
-        // 画面に収まらない内容をスクロール可能にする
-        // キーボードが表示されても内容が隠れない
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 習慣名の入力欄
-            _buildNameField(),
-            const SizedBox(height: 24),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          // SingleChildScrollView について:
+          // 画面に収まらない内容をスクロール可能にする
+          // キーボードが表示されても内容が隠れない
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 習慣名の入力欄
+              _buildNameField(),
+              const SizedBox(height: 24),
 
-            // 絵文字選択（EmojiSelectorウィジェットを使用）
-            EmojiSelector(
-              selectedEmoji: _selectedEmoji,
-              onEmojiSelected: (emoji) {
-                setState(() {
-                  _selectedEmoji = emoji;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
+              // 絵文字選択（EmojiSelectorウィジェットを使用）
+              EmojiSelector(
+                selectedEmoji: _selectedEmoji,
+                onEmojiSelected: (emoji) {
+                  setState(() {
+                    _selectedEmoji = emoji;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
 
-            // 色選択（ColorSelectorウィジェットを使用）
-            ColorSelector(
-              selectedColor: _selectedColor,
-              onColorSelected: (color) {
-                setState(() {
-                  _selectedColor = color;
-                });
-              },
-            ),
-            const SizedBox(height: 24),
+              // 色選択（ColorSelectorウィジェットを使用）
+              ColorSelector(
+                selectedColor: _selectedColor,
+                onColorSelected: (color) {
+                  setState(() {
+                    _selectedColor = color;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
 
-            // 曜日表示（編集不可）
-            _buildDaysOfWeekDisplay(),
-            const SizedBox(height: 32),
+              // 曜日表示（編集不可）
+              _buildDaysOfWeekDisplay(),
+              const SizedBox(height: 32),
 
-            // 保存ボタン
-            _buildSaveButton(),
-          ],
+              // 保存ボタン
+              _buildSaveButton(),
+            ],
+          ),
         ),
       ),
     );

@@ -233,52 +233,54 @@ class _AddHabitState extends State<AddHabit> {
       appBar: AppBar(
         title: Text(l10n.addHabit), // 習慣を追加
       ),
-      body: SingleChildScrollView(
-        // SingleChildScrollView について:
-        // 画面をスクロール可能にする
-        // キーボードが表示されたときに画面が隠れないようにするため
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 習慣名入力フィールド
-            _buildNameField(),
-            const SizedBox(height: 24),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          // SingleChildScrollView について:
+          // 画面をスクロール可能にする
+          // キーボードが表示されたときに画面が隠れないようにするため
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 習慣名入力フィールド
+              _buildNameField(),
+              const SizedBox(height: 24),
 
-            // 絵文字選択
-            // EmojiSelector ウィジェットを使用
-            // ウィジェット化することで、コードが見やすくなり、再利用もできる
-            EmojiSelector(
-              selectedEmoji: _selectedEmoji,
-              onEmojiSelected: (emoji) {
-                setState(() => _selectedEmoji = emoji);
-              },
-            ),
-            const SizedBox(height: 24),
+              // 絵文字選択
+              // EmojiSelector ウィジェットを使用
+              // ウィジェット化することで、コードが見やすくなり、再利用もできる
+              EmojiSelector(
+                selectedEmoji: _selectedEmoji,
+                onEmojiSelected: (emoji) {
+                  setState(() => _selectedEmoji = emoji);
+                },
+              ),
+              const SizedBox(height: 24),
 
-            // 色選択
-            // ColorSelector ウィジェットを使用
-            ColorSelector(
-              selectedColor: _selectedColor,
-              onColorSelected: (color) {
-                setState(() => _selectedColor = color);
-              },
-            ),
-            const SizedBox(height: 24),
+              // 色選択
+              // ColorSelector ウィジェットを使用
+              ColorSelector(
+                selectedColor: _selectedColor,
+                onColorSelected: (color) {
+                  setState(() => _selectedColor = color);
+                },
+              ),
+              const SizedBox(height: 24),
 
-            // 曜日設定
-            // DaySelector ウィジェットを使用
-            DaySelector(
-              isEveryDay: _isEveryDay,
-              selectedDays: _selectedDays,
-              onEveryDayChanged: _onEveryDayChanged,
-              onDayToggle: _onDayToggle,
-            ),
-            const SizedBox(height: 32),
+              // 曜日設定
+              // DaySelector ウィジェットを使用
+              DaySelector(
+                isEveryDay: _isEveryDay,
+                selectedDays: _selectedDays,
+                onEveryDayChanged: _onEveryDayChanged,
+                onDayToggle: _onDayToggle,
+              ),
+              const SizedBox(height: 32),
 
-            // 保存ボタン
-            _buildSaveButton(),
-          ],
+              // 保存ボタン
+              _buildSaveButton(),
+            ],
+          ),
         ),
       ),
     );
