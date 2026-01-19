@@ -3,8 +3,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:habit_tracker/data/achievement_data.dart';
 import 'package:provider/provider.dart';
 //データベース削除の際に必要　コメントアウト推奨
-// import 'package:sqflite/sqflite.dart';
-// import 'package:path/path.dart';
+//import 'package:sqflite/sqflite.dart';
+//import 'package:path/path.dart';
 import 'services/database_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
@@ -25,9 +25,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // データベースを削除 (開発中のみ)
-  // final dbPath = await getDatabasesPath();
-  // final path = join(dbPath, 'habit_flow.db');
-  // await deleteDatabase(path);
+  //final dbPath = await getDatabasesPath();
+  //final path = join(dbPath, 'habit_flow.db');
+  //await deleteDatabase(path);
 
   // データベースの初期化
   // await = データベースが開くまで待つ
